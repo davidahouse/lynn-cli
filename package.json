@@ -1,0 +1,62 @@
+{
+  "name": "lynn-cli",
+  "main": "bin/lynn-cli.js",
+  "version": "0.1.0",
+  "description": "A command line app for executing lynn requests",
+  "license": "MIT",
+  "repository": "davidahouse/lynn-cli",
+  "preferGlobal": true,
+  "bin": {
+    "lynn-cli": "bin/lynn-cli.js"
+  },
+  "dependencies": {
+    "@davidahouse/lynn": "^0.1.0",
+    "chalk": "^2.4.2",
+    "clear": "^0.1.0",
+    "commander": "^2.19.0",
+    "dateformat": "^3.0.3",
+    "figlet": "^1.2.1",
+    "jsonpath": "^1.0.1",
+    "mkdirp": "^0.5.1",
+    "ora": "^3.2.0",
+    "vorpal": "^1.12.0"
+  },
+  "devDependencies": {
+    "eslint": "^5.9.0",
+    "eslint-config-google": "^0.11.0"
+  },
+  "scripts": {
+    "lint": "eslint $(find . -name \"*.js\" -not -path \"./node_modules/*\" -not -path \"./public/*\")",
+    "lint-fix": "eslint --fix $(find . -name \"*.js\" -not -path \"./node_modules/*\" -not -path \"./public/*\")"
+  },
+  "eslintConfig": {
+    "env": {
+      "node": true,
+      "es6": true
+    },
+    "extends": [
+      "eslint:recommended",
+      "google"
+    ],
+    "parserOptions": {
+      "ecmaVersion": 6,
+      "ecmaFeatures": {
+        "impliedStrict": true
+      },
+      "sourceType": "module"
+    },
+    "rules": {
+      "no-console": 0,
+      "max-len": [
+        "error",
+        {
+          "code": 120
+        }
+      ],
+      "semi": [
+        "error",
+        "never"
+      ]
+    }
+  }
+}
