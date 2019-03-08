@@ -1,7 +1,7 @@
 # @davidahouse/lynn-cli
 
-[![npm (scoped)](https://img.shields.io/npm/v/@davidahouse/lynn-cli.svg)](https://www.npmjs.com/package/davidahouse/lynn-cli)
-[![npm bundle size (minified)](https://img.shields.io/bundlephobia/min/@davidahouse/lynn-cli.svg)](https://www.npmjs.com/package/davidahouse/lynn-cli)
+[![npm (scoped)](https://img.shields.io/npm/v/lynn-cli.svg)](https://www.npmjs.com/package/lynn-cli)
+[![npm bundle size (minified)](https://img.shields.io/bundlephobia/min/lynn-cli.svg)](https://www.npmjs.com/package/lynn-cli)
 
 Lynn-cli is a command line interface that utilizes the [lynn](https://github.com/davidahouse/lynn) module to perform network requests. It can execute the requests and generate documentation from the request definitions.
 
