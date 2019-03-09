@@ -147,6 +147,12 @@ List all the paths found in the result data in a format that can be copy/pasted 
 lynn-cli> schema -d
 ```
 
+Show the current config as set by the command line parameters and environment:
+
+```
+lynn-cli> config
+```
+
 ## Config
 
 Any parameters that you specify on the command line are always used, but you can provide defaults for these parameters in the following ways:
