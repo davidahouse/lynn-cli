@@ -41,7 +41,6 @@ if (conf.interactive) {
         },
       })
       .action(function(args, callback) {
-        const self = this
         const spinner = new Ora('--> ' + args.file, 'clock').start()
         const file = args.options.last ? lastRequest : args.file
         const requestFile = files.findFile(conf.workingFolder, file, 'requests', currentProject)
@@ -84,18 +83,18 @@ if (conf.interactive) {
         },
       })
       .action(function(args, callback) {
-        const self = this
         const file = args.options.last ? lastFlow : args.file
         const flowFile = files.findFile(conf.workingFolder, file, 'flows', currentProject)
         if (flowFile != null) {
           lastFlow = flowFile
           const flowContents = fs.readFileSync(flowFile)
           const flowDetails = JSON.parse(flowContents)
-          flow.executeFlowSteps(conf.workingFolder, currentEnvironment, flowDetails.steps, currentProject, conf.autoSave, function() {
-            callback()
-          })
+          flow.executeFlowSteps(conf.workingFolder, currentEnvironment,
+              flowDetails.steps, currentProject, conf.autoSave, function() {
+                callback()
+              })
         } else {
-          self.log(vorpal.chalk.red(flowFile + ' flow file not found!'))
+          vorpal.log(vorpal.chalk.red(flowFile + ' flow file not found!'))
           callback()
         }
       })
@@ -111,7 +110,7 @@ if (conf.interactive) {
         if (args.project != null) {
           currentProject = args.project
         } else {
-          this.log(vorpal.chalk.yellow('Current project: ' + currentProject))
+          vorpal.log(vorpal.chalk.yellow('Current project: ' + currentProject))
         }
         callback()
       })
@@ -138,7 +137,7 @@ if (conf.interactive) {
         } else {
           for (const key in currentEnvironment) {
             if (currentEnvironment.hasOwnProperty(key)) {
-              this.log(vorpal.chalk.yellow(key + ': ' + currentEnvironment[key]))
+              vorpal.log(vorpal.chalk.yellow(key + ': ' + currentEnvironment[key]))
             }
           }
         }
@@ -151,7 +150,7 @@ if (conf.interactive) {
         currentEnvironment = {}
         lastResult = {}
         lastRequest = {}
-        this.log('')
+        vorpal.log('')
         callback()
       })
 
@@ -159,12 +158,12 @@ if (conf.interactive) {
       .command('result [key]', 'View the contents of the last result')
       .action(function(args, callback) {
         if (args.key) {
-          this.log(vorpal.chalk.yellow(JSON.stringify(lastResult[args.key])))
+          vorpal.log(vorpal.chalk.yellow(JSON.stringify(lastResult[args.key])))
         } else {
           for (const key in lastResult) {
             if (lastResult.hasOwnProperty(key)) {
-              this.log(vorpal.chalk.yellow(key + ':'))
-              this.log(vorpal.chalk.yellow(JSON.stringify(lastResult[key])))
+              vorpal.log(vorpal.chalk.yellow(key + ':'))
+              vorpal.log(vorpal.chalk.yellow(JSON.stringify(lastResult[key])))
             }
           }
         }
@@ -181,7 +180,7 @@ if (conf.interactive) {
             conf.autoSave = false
           }
         } else {
-          this.log(vorpal.chalk.yellow('AutoSave enabled: ' + conf.autoSave))
+          vorpal.log(vorpal.chalk.yellow('AutoSave enabled: ' + conf.autoSave))
         }
         callback()
       })
@@ -189,7 +188,7 @@ if (conf.interactive) {
   vorpal
       .command('query <path>', 'Query the last result using jsonpath syntax')
       .action(function(args, callback) {
-        this.log(vorpal.chalk.yellow(JSON.stringify(jp.query(lastResult.data, args.path))))
+        vorpal.log(vorpal.chalk.yellow(JSON.stringify(jp.query(lastResult.data, args.path))))
         callback()
       })
 
@@ -203,9 +202,8 @@ if (conf.interactive) {
   vorpal
       .command('generate', 'Generate the docs for this project')
       .action(function(args, callback) {
-        const self = this
         generate.generateDocs(conf.workingFolder, currentProject, function() {
-          self.log(vorpal.chalk.yellow('Docs generated...'))
+          vorpal.log(vorpal.chalk.yellow('Docs generated...'))
           callback()
         })
       })
@@ -217,19 +215,21 @@ if (conf.interactive) {
         if (lastResult != null && lastResult.data != null) {
           schema.generateSchema(lastResult.data).forEach((path) => {
             if (args.options.fordocs) {
-              this.log(vorpal.chalk.yellow('{ "path": "' + path + '", "description": "" , "dataType": "", "expectedValues", ""},'))
+              vorpal.log(vorpal.chalk.
+                  yellow('{ "path": "' + path + '", "description": "" , "dataType": "", "expectedValues", ""},'))
             } else {
-              this.log(vorpal.chalk.yellow(path))
+              vorpal.log(vorpal.chalk.yellow(path))
             }
           })
         } else {
-          this.log(vorpal.chalk.yellow('No result found to map schema from'))
+          vorpal.log(vorpal.chalk.yellow('No result found to map schema from'))
         }
         callback()
       })
 
   vorpal
-      .command('matrix <request> <xaxis> <yaxis>', 'Execute a series of requests with a combination of environment files')
+      .command('matrix <request> <xaxis> <yaxis>',
+          'Execute a series of requests with a combination of environment files')
       .action(function(args, callback) {
         const xaxis = args.xaxis.split(',')
         const yaxis = args.yaxis.split(',')
@@ -268,6 +268,19 @@ if (conf.interactive) {
         }
       })
 
+  vorpal
+      .command('config', 'Show the current config')
+      .action(function(args, callback) {
+        vorpal.log(vorpal.chalk.yellow('Working Folder: ' + conf.workingFolder))
+        if (currentProject) {
+          vorpal.log(vorpal.chalk.yellow('Current Project: ' + currentProject))
+        } else {
+          vorpal.log(vorpal.chalk.yellow('No project set'))
+        }
+        vorpal.log(vorpal.chalk.yellow('Auto Save is ' + conf.autoSave))
+        callback()
+      })
+
   vorpal.delimiter('lynn-cli>').show()
 } else {
   if (conf.request != null) {
@@ -297,8 +310,9 @@ if (conf.interactive) {
     if (flowFile != null) {
       const flowContents = fs.readFileSync(flowFile)
       const flowDetails = JSON.parse(flowContents)
-      flow.executeFlowSteps(conf.workingFolder, currentEnvironment, flowDetails.steps, currentProject, conf.autoSave, function() {
-      })
+      flow.executeFlowSteps(conf.workingFolder, currentEnvironment, flowDetails.steps,
+          currentProject, conf.autoSave, function() {
+          })
     } else {
       console.log(chalk.red(flowFile + ' flow file not found!'))
     }
