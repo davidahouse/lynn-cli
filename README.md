@@ -20,43 +20,43 @@ npm install -g @davidahouse/lynn-cli
 Interactive mode:
 
 ```
-lynn-cli -i
+lynn-cli
 ```
 
 Change the default working folder from ~/.lynn to a specific folder:
 
 ```
-lynn-cli -w <path>
+lynn-cli --workingFolder <path>
 ```
 
 Set the project (aka subfolder) if your working folder contains multiple top level folders:
 
 ```
-lynn-cli -p <project>
+lynn-cli --project <project>
 ```
 
 Add variables to the initial request environment (this can be a comma separated list of files). File paths are relative to the working folder + project and are located in the `environment` subfolder:
 
 ```
-lynn-cli -e <filename(s)>
+lynn-cli --environment <filename(s)>
 ```
 
 Turn on auto saving of requests (output goes into the `log` subfolder of your current workingFolder + project directory):
 
 ```
-lynn-cli -s
+lynn-cli --autoSave true
 ```
 
 Execute a single request. Requests are found in the `requests` sub-folder and are json files that contain all the details related to executing and documenting the request.
 
 ```
-lynn-cli -r <requestfile>
+lynn-cli --request <requestfile>
 ```
 
 Execute a series of requests (aka flow). Flows are found in the `flows` sub-folder and are json files that describe which request to execute and how to execute additional reqests (perhaps with data collected from the initial request).
 
 ```
-lynn-cli -f <flowfile>
+lynn-cli --flow <flowfile>
 ```
 
 ## Interactive mode commands
@@ -146,3 +146,52 @@ List all the paths found in the result data in a format that can be copy/pasted 
 ```
 lynn-cli> schema -d
 ```
+
+## Config
+
+Any parameters that you specify on the command line are always used, but you can provide defaults for these parameters in the following ways:
+
+### Common .lynnrc file 
+
+For defaults that apply machine wide, you can create a default config file in one of the following locations:
+
+```
+$HOME/.lynnrc
+$HOME/.lynn/config
+$HOME/.config/lynn
+$HOME/.config/lynn/config
+/etc/lynnrc
+/etc/lynn/config
+```
+
+Note that this is the order of importance so a file located in $HOME/.lynnrc will overwrite any default found in any of the other locations.
+
+The config file should be a json file and has a basic structure that matches the possible command line parameters:
+
+```
+{
+  "workingFolder": "",
+  "environment": "",
+  "autoSave": true,
+  "project": ""
+}
+```
+
+Note you only need to specify the parameters you want to provide defaults for in this file.
+
+### A .lynnrc file in the folder you invoke lynn-cli from
+
+Any .lynnrc file found in the current directory will also be used and will overwrite any defaults specified in your ~/.lynnrc file. The format of the file is the same.
+
+Also the system will look in ../ and any parent folder up to the root for any .lynnrc file, but only the first one found will be used and considered a local config file (ie: it will overwrite any config found in the machine/user wide config files above).
+
+### Environment variables
+
+If you have environment variables for any of the parameters they will overwrite any defaults provided in the .lynnrc files above. Environment variables can be one of the following:
+
+`lynn_workingFolder`
+`lynn_environment`
+`lynn_autoSave`
+`lynn_project`
+
+
