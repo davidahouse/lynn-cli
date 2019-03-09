@@ -257,6 +257,7 @@ if (conf.interactive) {
                 }
               }
             }
+            currentEnvironment['MATRIXTITLE'] = x + ',' + y
             iterations.push(JSON.stringify(currentEnvironment))
           })
         })
