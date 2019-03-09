@@ -4,6 +4,7 @@
 
 - [6] Added support for .lynnrc files and getting command line from environment
 - [21] Fixed how flow queues up child requests
+- [2] Added data type and expected values to schema docs
 
 ## 0.1.1
 

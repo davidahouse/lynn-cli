@@ -213,7 +213,7 @@ if (conf.interactive) {
         if (lastResult != null && lastResult.data != null) {
           schema.generateSchema(lastResult.data).forEach((path) => {
             if (args.options.fordocs) {
-              this.log(vorpal.chalk.yellow('{ "path": "' + path + '", "description": "" },'))
+              this.log(vorpal.chalk.yellow('{ "path": "' + path + '", "description": "" , "dataType": "", "expectedValues", ""},'))
             } else {
               this.log(vorpal.chalk.yellow(path))
             }
