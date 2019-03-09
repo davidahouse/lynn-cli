@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@davidahouse/lynn": "^0.2.0",
+    "better-queue": "^3.8.10",
     "chalk": "^2.4.2",
     "clear": "^0.1.0",
     "commander": "^2.19.0",
