@@ -49,11 +49,15 @@ if (conf.interactive) {
           lastRequest = requestFile
           request.executeRequest(conf.workingFolder, currentEnvironment, requestFile, currentProject, conf.autoSave,
               function(result, response, captured) {
-                if (result.statusCode < 300) {
-                  spinner.color = 'green'
-                  spinner.succeed('--> ' + file + ' ' + chalk.green(response))
-                } else if (result.statusCode > 300) {
-                  spinner.fail('--> ' + file + ' ' + chalk.red(response))
+                if (result.statusCode) {
+                  if (result.statusCode < 300) {
+                    spinner.color = 'green'
+                    spinner.succeed('--> ' + file + ' ' + chalk.green(response))
+                  } else if (result.statusCode > 300) {
+                    spinner.fail('--> ' + file + ' ' + chalk.red(response))
+                  }
+                } else {
+                  spinner.fail('--> ' + file + ' ' + chalk.red(result.error))
                 }
                 lastResult = result
                 for (const key in captured) {
