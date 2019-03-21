@@ -1,5 +1,9 @@
 ## lynn-cli
 
+## 0.2.1
+
+- Updated to lynn version 0.3.0 for query string support
+
 ## 0.2.0
 
 - [6] Added support for .lynnrc files and getting command line from environment
