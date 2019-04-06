@@ -20,6 +20,7 @@ const request = require('../lib/request')
 const flow = require('../lib/flow')
 const generate = require('../lib/generate')
 const schema = require('../lib/schema')
+const operation = require('../lib/operation')
 
 clear()
 console.log(chalk.yellow(figlet.textSync('lynn', {horizontalLayout: 'full'})))
@@ -29,6 +30,7 @@ let currentEnvironment = environment.gatherEnvironment(conf.workingFolder, conf.
 let lastRequest = {}
 let lastFlow = {}
 let lastResult = {}
+let operations = operation.gatherOperations(conf.workingFolder, currentProject)
 
 if (conf.interactive) {
   vorpal
@@ -279,6 +281,87 @@ if (conf.interactive) {
           vorpal.log(vorpal.chalk.yellow('No project set'))
         }
         vorpal.log(vorpal.chalk.yellow('Auto Save is ' + conf.autoSave))
+        callback()
+      })
+
+  vorpal
+      .command('operation <name>', 'Execute an operation inside an OpenAPI spec')
+      .action(function(args, callback) {
+        // TODO: Eventually we need to support multiple swagger files, but for now we assume there is an openapi.json file in the
+        // /api folder that contains the operations
+        const spinner = new Ora('--> ' + args.name, 'clock').start()
+        const apiFile = files.findFile(conf.workingFolder, 'openapi.json', 'api', currentProject)
+        if (apiFile != null) {
+          const apiContents = fs.readFileSync(apiFile)
+          const apiDetails = JSON.parse(apiContents)
+          operation.executeOperation(conf.workingFolder, currentEnvironment, apiDetails, args.name, currentProject, conf.autoSave, function(result, response, captured) {
+            if (result.statusCode) {
+              if (result.statusCode < 300) {
+                spinner.color = 'green'
+                spinner.succeed('--> ' + args.name + ' ' + chalk.green(response))
+              } else if (result.statusCode > 300) {
+                spinner.fail('--> ' + args.name + ' ' + chalk.red(response))
+              }
+            } else {
+               spinner.fail('--> ' + args.name + ' ' + chalk.red(result.error))
+            }
+            lastResult = result
+            for (const key in captured) {
+              if (captured.hasOwnProperty(key)) {
+                currentEnvironment[key] = captured[key]
+              }
+            }
+            callback()
+          })
+        }
+      })
+
+  vorpal
+      .command('import <path>', 'Import a swagger file')
+      .action(function(args, callback) {
+        vorpal.log(vorpal.chalk.yellow('Import path: ' + args.path))
+        const importContents = fs.readFileSync(args.path)
+        const importDetails = JSON.parse(importContents)
+        vorpal.log(vorpal.chalk.yellow(importDetails['swagger']))
+        let currentRequest = 1
+        for (const key in importDetails.paths) {
+          if (importDetails.paths.hasOwnProperty(key)) {
+            const pathDetails = importDetails.paths[key]
+            const queryParamsStart = key.indexOf('?')
+            let path = ''
+            if (queryParamsStart > 0) {
+              path = key.substr(1, queryParamsStart-1)
+            } else {
+              path = key.substr(1)
+            }
+
+            if (pathDetails.get != null) {
+              vorpal.log(vorpal.chalk.red(path))
+              // TODO: Fix this path so its safe
+              //          const sanitizedPath = path.replace('/', '_', 0)
+              const sanitizedPath = 'request' + currentRequest.toString() + '.json'
+              vorpal.log(vorpal.chalk.red(sanitizedPath))
+              const request = {}
+              request.title = path
+              request.description = pathDetails.get.description
+              request.options = {}
+              request.options.host = importDetails.host
+              request.options.protocol = 'https'
+              request.options.method = 'GET'
+              request.options.path = key
+              const queryParams = {}
+              if (pathDetails.get.parameters != null) {
+                pathDetails.get.parameters.forEach(function(param) {
+                  queryParams[param.name] = '${this.' + param.name + '}'
+                })
+              }
+              request.options.queryParams = queryParams
+              const rawRequest = JSON.stringify(request, null, 4)
+              fs.writeFileSync(conf.workingFolder + '/' + currentProject + '/requests/' + sanitizedPath, rawRequest)
+              currentRequest = currentRequest + 1
+            }
+          }
+        }
         callback()
       })
 
