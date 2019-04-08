@@ -6,6 +6,7 @@ const figlet = require('figlet')
 const vorpal = require('vorpal')()
 const Ora = require('ora')
 const jp = require('jsonpath')
+const ptr = require('json-ptr')
 const conf = require('rc')('lynn', {
   // defaults
   workingFolder: process.env.HOME + '/.lynn',
@@ -30,50 +31,53 @@ let currentEnvironment = environment.gatherEnvironment(conf.workingFolder, conf.
 let lastRequest = {}
 let lastFlow = {}
 let lastResult = {}
-let operations = operation.gatherOperations(conf.workingFolder, currentProject)
+const requests = operation.gatherOperations(conf.workingFolder, currentProject)
+const projectInfo = files.projectFileContents(conf.workingFolder, currentProject)
+console.log(chalk.yellow(projectInfo.title))
+console.log(chalk.yellow(projectInfo.description))
 
 if (conf.interactive) {
-  vorpal
-      .command('request [file]', 'Execute a request')
-      .option('-l, --last', 'Re-execute the last request')
-      .autocomplete({
-        data: function() {
-          const found = files.listFiles(conf.workingFolder, 'requests', currentProject)
-          return found
-        },
-      })
-      .action(function(args, callback) {
-        const spinner = new Ora('--> ' + args.file, 'clock').start()
-        const file = args.options.last ? lastRequest : args.file
-        const requestFile = files.findFile(conf.workingFolder, file, 'requests', currentProject)
-        if (requestFile != null) {
-          lastRequest = requestFile
-          request.executeRequest(conf.workingFolder, currentEnvironment, requestFile, currentProject, conf.autoSave,
-              function(result, response, captured) {
-                if (result.statusCode) {
-                  if (result.statusCode < 300) {
-                    spinner.color = 'green'
-                    spinner.succeed('--> ' + file + ' ' + chalk.green(response))
-                  } else if (result.statusCode > 300) {
-                    spinner.fail('--> ' + file + ' ' + chalk.red(response))
-                  }
-                } else {
-                  spinner.fail('--> ' + file + ' ' + chalk.red(result.error))
-                }
-                lastResult = result
-                for (const key in captured) {
-                  if (captured.hasOwnProperty(key)) {
-                    currentEnvironment[key] = captured[key]
-                  }
-                }
-                callback()
-              }
-          )
-        } else {
-          spinner.fail(requestFile + ' request file not found!')
-          callback()
-        }
-      })
+  // vorpal
+  //     .command('request [file]', 'Execute a request')
+  //     .option('-l, --last', 'Re-execute the last request')
+  //     .autocomplete({
+  //       data: function() {
+  //         const found = files.listFiles(conf.workingFolder, 'requests', currentProject)
+  //         return found
+  //       },
+  //     })
+  //     .action(function(args, callback) {
+  //       const spinner = new Ora('--> ' + args.file, 'clock').start()
+  //       const file = args.options.last ? lastRequest : args.file
+  //       const requestFile = files.findFile(conf.workingFolder, file, 'requests', currentProject)
+  //       if (requestFile != null) {
+  //         lastRequest = requestFile
+  //         request.executeRequest(conf.workingFolder, currentEnvironment, requestFile, currentProject, conf.autoSave,
+  //             function(result, response, captured) {
+  //               if (result.statusCode) {
+  //                 if (result.statusCode < 300) {
+  //                   spinner.color = 'green'
+  //                   spinner.succeed('--> ' + file + ' ' + chalk.green(response))
+  //                 } else if (result.statusCode > 300) {
+  //                   spinner.fail('--> ' + file + ' ' + chalk.red(response))
+  //                 }
+  //               } else {
+  //                 spinner.fail('--> ' + file + ' ' + chalk.red(result.error))
+  //               }
+  //               lastResult = result
+  //               for (const key in captured) {
+  //                 if (captured.hasOwnProperty(key)) {
+  //                   currentEnvironment[key] = captured[key]
+  //                 }
+  //               }
+  //               callback()
+  //             }
+  //         )
+  //       } else {
+  //         spinner.fail(requestFile + ' request file not found!')
+  //         callback()
+  //       }
+  //     })
 
   vorpal
       .command('flow [file]', 'Execute a request flow')
@@ -190,7 +194,25 @@ if (conf.interactive) {
   vorpal
       .command('query <path>', 'Query the last result using jsonpath syntax')
       .action(function(args, callback) {
-        vorpal.log(vorpal.chalk.yellow(JSON.stringify(jp.query(lastResult.data, args.path))))
+        // Support three kinds of query here:
+        // default is just a JSON pointer query into the result data
+        // second if the user starts the query with $ then we do a full query across
+        // entire result object
+        // third if the user starts the query with ? then we perform a JSON path query
+        let found = null
+        try {
+          if (args.path.startsWith('$')) {
+            const searchObject = {response: lastResult}
+            found = ptr.get(searchObject, args.path.substring(1))
+          } else if (args.path.startsWith('?')) {
+            found = jp.query(lastResult.data, '$' + args.path.substring(1))
+          } else {
+            found = ptr.get(lastResult.data, args.path)
+          }
+          vorpal.log(vorpal.chalk.yellow(JSON.stringify(found)))
+        } catch (e) {
+          vorpal.log(vorpal.chalk.red('Error performing query ' + e))
+        }
         callback()
       })
 
@@ -215,17 +237,27 @@ if (conf.interactive) {
       .option('-d, --fordocs', 'Print out the schema for copy/pasting into the docs')
       .action(function(args, callback) {
         if (lastResult != null && lastResult.data != null) {
-          schema.generateSchema(lastResult.data).forEach((path) => {
-            if (args.options.fordocs) {
-              vorpal.log(vorpal.chalk.
-                  yellow('{ "path": "' + path + '", "description": "" , "dataType": "", "expectedValues", ""},'))
-            } else {
-              vorpal.log(vorpal.chalk.yellow(path))
+          const schema = ptr.flatten(lastResult.data)
+          for (const key in schema) {
+            if (schema.hasOwnProperty(key) && key != '') {
+              vorpal.log(vorpal.chalk.yellow(key))
             }
-          })
+          }
         } else {
           vorpal.log(vorpal.chalk.yellow('No result found to map schema from'))
         }
+
+        // if (lastResult != null && lastResult.data != null) {
+        //   schema.generateSchema(lastResult.data).forEach((path) => {
+        //     if (args.options.fordocs) {
+        //       vorpal.log(vorpal.chalk.
+        //           yellow('{ "path": "' + path + '", "description": "" , "dataType": "", "expectedValues", ""},'))
+        //     } else {
+        //       vorpal.log(vorpal.chalk.yellow(path))
+        //     }
+        //   })
+        // } else {
+        // }
         callback()
       })
 
@@ -283,18 +315,30 @@ if (conf.interactive) {
         vorpal.log(vorpal.chalk.yellow('Auto Save is ' + conf.autoSave))
         callback()
       })
-
   vorpal
-      .command('operation <name>', 'Execute an operation inside an OpenAPI spec')
+      .command('requests', 'List all the requests available')
       .action(function(args, callback) {
-        // TODO: Eventually we need to support multiple swagger files, but for now we assume there is an openapi.json file in the
-        // /api folder that contains the operations
+        for (const key in requests) {
+          if (requests.hasOwnProperty(key)) {
+            vorpal.log(vorpal.chalk.yellow(key) + ' - ' + requests[key].summary)
+          }
+        }
+        callback()
+      })
+  vorpal
+      .command('request <name>', 'Execute a request inside an OpenAPI spec')
+      .action(function(args, callback) {
+        if (requests[args.name] == null) {
+          vorpal.log(vorpal.chalk.red('Request ' + args.name + ' not found'))
+          callback()
+          return
+        }
+
         const spinner = new Ora('--> ' + args.name, 'clock').start()
-        const apiFile = files.findFile(conf.workingFolder, 'openapi.json', 'api', currentProject)
+        const rootPath = files.rootPath(conf.workingFolder, 'api', currentProject)
+        const apiFile = operation.parseApiFile(rootPath + '/' + requests[args.name].file)
         if (apiFile != null) {
-          const apiContents = fs.readFileSync(apiFile)
-          const apiDetails = JSON.parse(apiContents)
-          operation.executeOperation(conf.workingFolder, currentEnvironment, apiDetails, args.name, currentProject, conf.autoSave, function(result, response, captured) {
+          operation.executeOperation(conf.workingFolder, currentEnvironment, apiFile, args.name, currentProject, conf.autoSave, function(result, response, captured) {
             if (result.statusCode) {
               if (result.statusCode < 300) {
                 spinner.color = 'green'
@@ -303,66 +347,18 @@ if (conf.interactive) {
                 spinner.fail('--> ' + args.name + ' ' + chalk.red(response))
               }
             } else {
-               spinner.fail('--> ' + args.name + ' ' + chalk.red(result.error))
+              spinner.fail('--> ' + args.name + ' ' + chalk.red(result.error))
             }
             lastResult = result
-            for (const key in captured) {
-              if (captured.hasOwnProperty(key)) {
-                currentEnvironment[key] = captured[key]
+            const capturedValues = operation.capture(apiFile, args.name, result)
+            for (const key in capturedValues) {
+              if (capturedValues.hasOwnProperty(key)) {
+                currentEnvironment[key] = capturedValues[key]
               }
             }
             callback()
           })
         }
-      })
-
-  vorpal
-      .command('import <path>', 'Import a swagger file')
-      .action(function(args, callback) {
-        vorpal.log(vorpal.chalk.yellow('Import path: ' + args.path))
-        const importContents = fs.readFileSync(args.path)
-        const importDetails = JSON.parse(importContents)
-        vorpal.log(vorpal.chalk.yellow(importDetails['swagger']))
-        let currentRequest = 1
-        for (const key in importDetails.paths) {
-          if (importDetails.paths.hasOwnProperty(key)) {
-            const pathDetails = importDetails.paths[key]
-            const queryParamsStart = key.indexOf('?')
-            let path = ''
-            if (queryParamsStart > 0) {
-              path = key.substr(1, queryParamsStart-1)
-            } else {
-              path = key.substr(1)
-            }
-
-            if (pathDetails.get != null) {
-              vorpal.log(vorpal.chalk.red(path))
-              // TODO: Fix this path so its safe
-              //          const sanitizedPath = path.replace('/', '_', 0)
-              const sanitizedPath = 'request' + currentRequest.toString() + '.json'
-              vorpal.log(vorpal.chalk.red(sanitizedPath))
-              const request = {}
-              request.title = path
-              request.description = pathDetails.get.description
-              request.options = {}
-              request.options.host = importDetails.host
-              request.options.protocol = 'https'
-              request.options.method = 'GET'
-              request.options.path = key
-              const queryParams = {}
-              if (pathDetails.get.parameters != null) {
-                pathDetails.get.parameters.forEach(function(param) {
-                  queryParams[param.name] = '${this.' + param.name + '}'
-                })
-              }
-              request.options.queryParams = queryParams
-              const rawRequest = JSON.stringify(request, null, 4)
-              fs.writeFileSync(conf.workingFolder + '/' + currentProject + '/requests/' + sanitizedPath, rawRequest)
-              currentRequest = currentRequest + 1
-            }
-          }
-        }
-        callback()
       })
 
   vorpal.delimiter('lynn-cli>').show()
