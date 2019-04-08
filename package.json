@@ -10,7 +10,7 @@
     "lynn-cli": "bin/lynn-cli.js"
   },
   "dependencies": {
-    "@davidahouse/lynn": "^0.3.0",
+    "lynn-request": "^0.1.0",
     "better-queue": "^3.8.10",
     "chalk": "^2.4.2",
     "clear": "^0.1.0",

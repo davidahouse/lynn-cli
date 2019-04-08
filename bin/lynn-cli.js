@@ -17,8 +17,6 @@ const conf = require('rc')('lynn', {
 // Internal helpers
 const files = require('../lib/files')
 const environment = require('../lib/environment')
-const request = require('../lib/request')
-const flow = require('../lib/flow')
 const generate = require('../lib/generate')
 const schema = require('../lib/schema')
 const operation = require('../lib/operation')
@@ -205,9 +203,9 @@ if (conf.interactive) {
             const searchObject = {response: lastResult}
             found = ptr.get(searchObject, args.path.substring(1))
           } else if (args.path.startsWith('?')) {
-            found = jp.query(lastResult.data, '$' + args.path.substring(1))
+            found = jp.query(lastResult.body, '$' + args.path.substring(1))
           } else {
-            found = ptr.get(lastResult.data, args.path)
+            found = ptr.get(lastResult.body, args.path)
           }
           vorpal.log(vorpal.chalk.yellow(JSON.stringify(found)))
         } catch (e) {
@@ -236,8 +234,8 @@ if (conf.interactive) {
       .command('schema', 'Generate the list of paths found in the result data json')
       .option('-d, --fordocs', 'Print out the schema for copy/pasting into the docs')
       .action(function(args, callback) {
-        if (lastResult != null && lastResult.data != null) {
-          const schema = ptr.flatten(lastResult.data)
+        if (lastResult != null && lastResult.body != null) {
+          const schema = ptr.flatten(lastResult.body)
           for (const key in schema) {
             if (schema.hasOwnProperty(key) && key != '') {
               vorpal.log(vorpal.chalk.yellow(key))
@@ -246,18 +244,6 @@ if (conf.interactive) {
         } else {
           vorpal.log(vorpal.chalk.yellow('No result found to map schema from'))
         }
-
-        // if (lastResult != null && lastResult.data != null) {
-        //   schema.generateSchema(lastResult.data).forEach((path) => {
-        //     if (args.options.fordocs) {
-        //       vorpal.log(vorpal.chalk.
-        //           yellow('{ "path": "' + path + '", "description": "" , "dataType": "", "expectedValues", ""},'))
-        //     } else {
-        //       vorpal.log(vorpal.chalk.yellow(path))
-        //     }
-        //   })
-        // } else {
-        // }
         callback()
       })
 
@@ -338,7 +324,7 @@ if (conf.interactive) {
         const rootPath = files.rootPath(conf.workingFolder, 'api', currentProject)
         const apiFile = operation.parseApiFile(rootPath + '/' + requests[args.name].file)
         if (apiFile != null) {
-          operation.executeOperation(conf.workingFolder, currentEnvironment, apiFile, args.name, currentProject, conf.autoSave, function(result, response, captured) {
+          operation.executeOperation(conf.workingFolder, currentEnvironment, apiFile, args.name, currentProject, conf.autoSave, function(result, response) {
             if (result.statusCode) {
               if (result.statusCode < 300) {
                 spinner.color = 'green'
