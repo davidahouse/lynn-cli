@@ -1,5 +1,9 @@
 ## lynn-cli
 
+## 0.3.0
+
+- Request format changed to use OpenAPI 3 spec files (NOTE: not all openAPI features supported yet)
+
 ## 0.2.1
 
 - Updated to lynn version 0.3.0 for query string support
