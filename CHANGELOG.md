@@ -4,6 +4,8 @@
 
 - [38] Fixed crash on launch if requests folder not found## 0.3.0
 - [30] Added version number to the launch banner
+- [39] Created a getting started guide
+- [43] Renamed `result` command to `response`
 
 ## 0.3.0
 

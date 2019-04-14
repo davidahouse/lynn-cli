@@ -49,12 +49,12 @@ lynn-cli> help
     project [project]                 Select a project or display current project
     environment [env]                 Add to current environment or display current environment
     reset                             Reset any saved config
-    result [key]                      View the contents of the last result
+    response [key]                      View the contents of the last response
     autoSave [save]                   Turn on/off saving of responses
-    query <path>                      Query the last result using jsonpath syntax
+    query <path>                      Query the last response using jsonpath syntax
     set <variable> <value>            Set a value in the current environment
     generate                          Generate the docs for this project
-    schema [options]                  Generate the list of paths found in the result data json
+    schema [options]                  Generate the list of paths found in the response data json
     matrix <request> <xaxis> <yaxis>  Execute a series of requests with a combination of environment files
     config                            Show the current config
     requests                          List all the requests available
@@ -90,14 +90,14 @@ lynn-cli> request posts
 lynn-cli>
 ```
 
-The result will display the http status code along with the response time.
+The response will display the http status code along with the response time.
 
 ### Looking at the response
 
-Getting further details about the request & response can be found using the `result` command:
+Getting further details about the request & response can be found using the `response` command:
 
 ```
-lynn-cli> result
+lynn-cli> response
 options:
 {"protocol":"https:","host":"jsonplaceholder.typicode.com","port":"443","method":"GET","path":"/posts?","headers":{},"auth":null,"timeout":30000}
 statusCode:
@@ -114,7 +114,7 @@ responseTime:
 307.92865
 ```
 
-The result is a json object with the following top level values:
+The response is a json object with the following top level values:
 
 - options (the details used to make the request)
 - statusCode (the http status code of the response)
@@ -123,10 +123,10 @@ The result is a json object with the following top level values:
 - error (the error if not a http error)
 - responseTime (the response time)
 
-You can get just part of the result by specifying one of the above top level values:
+You can get just part of the response by specifying one of the above top level values:
 
 ```
-lynn-cli> result headers
+lynn-cli> response headers
 {"date":"Sun, 14 Apr 2019 17:45:40 GMT","content-type":"application/json; charset=utf-8","transfer-encoding":"chunked","connection":"close","set-cookie":["__cfduid=d46dc60424e6fb01d2d4d6318f9e2ab181555263940; expires=Mon, 13-Apr-20 17:45:40 GMT; path=/; domain=.typicode.com; HttpOnly"],"x-powered-by":"Express","vary":"Origin, Accept-Encoding","access-control-allow-credentials":"true","cache-control":"public, max-age=14400","pragma":"no-cache","expires":"Sun, 14 Apr 2019 21:45:40 GMT","x-content-type-options":"nosniff","etag":"W/\"6b80-Ybsq/K6GwwqrYkAsFxqDXGC7DoM\"","via":"1.1 vegur","cf-cache-status":"HIT","expect-ct":"max-age=604800, report-uri=\"https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct\"","server":"cloudflare","cf-ray":"4c777eabdbd9cf6a-IAD"}
 lynn-cli>
 ```
@@ -177,9 +177,9 @@ PROTOCOL: https:
 lynn-cli>
 ```
 
-### Digging deeper into the result
+### Digging deeper into the response
 
-You can get a schema of the result body using the `schema` command:
+You can get a schema of the response body using the `schema` command:
 
 ```
 lynn-cli> request posts
@@ -206,7 +206,7 @@ lynn-cli> schema
 /99/body
 ```
 
-This gives you a quick way to find all the json paths in the result. Which leads to different ways you can query for values. First off, you can just query for a single path directly:
+This gives you a quick way to find all the json paths in the response. Which leads to different ways you can query for values. First off, you can just query for a single path directly:
 
 ```
 lynn-cli> query /99/title
@@ -214,7 +214,7 @@ lynn-cli> query /99/title
 lynn-cli>
 ```
 
-Note this method works directly on the result body, but if you use the `$` character to start the path you can look into the full response object:
+Note this method works directly on the response body, but if you use the `$` character to start the path you can look into the full response object:
 
 ```
 lynn-cli> query query $/response/headers/cache-control
@@ -222,7 +222,7 @@ lynn-cli> query query $/response/headers/cache-control
 lynn-cli>
 ```
 
-If you want multiple results you can perform a JSON path query by using the `?` character and then the JSON path query string:
+If you want multiple values you can perform a JSON path query by using the `?` character and then the JSON path query string:
 
 ```
 lynn-cli> query ?..id
@@ -232,9 +232,9 @@ lynn-cli>
 
 To find out more about the JSON path query syntax, checkout the node.js module: https://www.npmjs.com/package/jsonpath. Just note that `lynn-cli` uses the `?` character instead of `$` since the `$` character represents a single element using the JSON pointer syntax.
 
-### Saving results
+### Saving responses
 
-To save results to a file, just use the `autoSave` command:
+To save responses to a file, just use the `autoSave` command:
 
 ```
 lynn-cli> autoSave true
