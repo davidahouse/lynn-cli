@@ -103,10 +103,10 @@ Reset the current environment and any previously executed requests:
 lynn-cli> reset
 ```
 
-View the results of the previous request. Key is optional and can contain one of the following vaules: [options, statusCode, headers, data, error, responseTime]:
+View the response of the previous request. Key is optional and can contain one of the following vaules: [options, statusCode, headers, data, error, responseTime]:
 
 ```
-lynn-cli> result [key]
+lynn-cli> response [key]
 ```
 
 Turn auto save on/off:
@@ -115,7 +115,7 @@ Turn auto save on/off:
 lynn-cli> autoSave <true/false>
 ```
 
-Execute a jsonpath query inside the result data. See [jsonpath node library](https://github.com/dchester/jsonpath) for more details on allowed paths:
+Execute a jsonpath query inside the response data. See [jsonpath node library](https://github.com/dchester/jsonpath) for more details on allowed paths:
 
 ```
 lynn-cli> query <jsonpath>
@@ -139,13 +139,13 @@ Generate markdown documentation for the API project. Note this creates a README.
 lynn-cli> generate
 ```
 
-List all the paths found in the result data:
+List all the paths found in the response data:
 
 ```
 lynn-cli> schema
 ```
 
-List all the paths found in the result data in a format that can be copy/pasted into the request docs section:
+List all the paths found in the response data in a format that can be copy/pasted into the request docs section:
 
 ```
 lynn-cli> schema -d
