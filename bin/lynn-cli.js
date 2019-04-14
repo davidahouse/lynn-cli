@@ -29,7 +29,7 @@ console.log(chalk.yellow(module.exports.version))
 let currentProject = conf.project
 let currentEnvironment = environment.gatherEnvironment(conf.workingFolder, conf.environment, currentProject)
 let lastFlow = {}
-let lastResult = {}
+let lastResponse = {}
 const requests = operation.gatherOperations(conf.workingFolder, currentProject)
 const projectInfo = files.projectFileContents(conf.workingFolder, currentProject)
 if (projectInfo != null && projectInfo.title != null) {
@@ -90,22 +90,22 @@ if (conf.interactive) {
       .command('reset', 'Reset any saved config')
       .action(function(args, callback) {
         currentEnvironment = {}
-        lastResult = {}
+        lastResponse = {}
         lastRequest = {}
         vorpal.log('')
         callback()
       })
 
   vorpal
-      .command('result [key]', 'View the contents of the last result')
+      .command('response [key]', 'View the contents of the last response')
       .action(function(args, callback) {
         if (args.key) {
-          vorpal.log(vorpal.chalk.yellow(JSON.stringify(lastResult[args.key])))
+          vorpal.log(vorpal.chalk.yellow(JSON.stringify(lastResponse[args.key])))
         } else {
-          for (const key in lastResult) {
-            if (lastResult.hasOwnProperty(key)) {
+          for (const key in lastResponse) {
+            if (lastResponse.hasOwnProperty(key)) {
               vorpal.log(vorpal.chalk.yellow(key + ':'))
-              vorpal.log(vorpal.chalk.yellow(JSON.stringify(lastResult[key])))
+              vorpal.log(vorpal.chalk.yellow(JSON.stringify(lastResponse[key])))
             }
           }
         }
@@ -128,22 +128,22 @@ if (conf.interactive) {
       })
 
   vorpal
-      .command('query <path>', 'Query the last result using jsonpath syntax')
+      .command('query <path>', 'Query the last response using jsonpath syntax')
       .action(function(args, callback) {
         // Support three kinds of query here:
-        // default is just a JSON pointer query into the result data
+        // default is just a JSON pointer query into the response data
         // second if the user starts the query with $ then we do a full query across
-        // entire result object
+        // entire response object
         // third if the user starts the query with ? then we perform a JSON path query
         let found = null
         try {
           if (args.path.startsWith('$')) {
-            const searchObject = {response: lastResult}
+            const searchObject = {response: lastResponse}
             found = ptr.get(searchObject, args.path.substring(1))
           } else if (args.path.startsWith('?')) {
-            found = jp.query(lastResult.body, '$' + args.path.substring(1))
+            found = jp.query(lastResponse.body, '$' + args.path.substring(1))
           } else {
-            found = ptr.get(lastResult.body, args.path)
+            found = ptr.get(lastResponse.body, args.path)
           }
           vorpal.log(vorpal.chalk.yellow(JSON.stringify(found)))
         } catch (e) {
@@ -171,18 +171,18 @@ if (conf.interactive) {
       })
 
   vorpal
-      .command('schema', 'Generate the list of paths found in the result data json')
+      .command('schema', 'Generate the list of paths found in the response data json')
       .option('-d, --fordocs', 'Print out the schema for copy/pasting into the docs')
       .action(function(args, callback) {
-        if (lastResult != null && lastResult.body != null) {
-          const schema = ptr.flatten(lastResult.body)
+        if (lastResponse != null && lastResponse.body != null) {
+          const schema = ptr.flatten(lastResponse.body)
           for (const key in schema) {
             if (schema.hasOwnProperty(key) && key != '') {
               vorpal.log(vorpal.chalk.yellow(key))
             }
           }
         } else {
-          vorpal.log(vorpal.chalk.yellow('No result found to map schema from'))
+          vorpal.log(vorpal.chalk.yellow('No response found to map schema from'))
         }
         callback()
       })
@@ -279,7 +279,7 @@ if (conf.interactive) {
             } else {
               spinner.fail('--> ' + args.name + ' ' + chalk.red(result.error))
             }
-            lastResult = result
+            lastResponse = result
             const capturedValues = operation.capture(apiFile, args.name, result)
             for (const key in capturedValues) {
               if (capturedValues.hasOwnProperty(key)) {
