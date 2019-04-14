@@ -3,6 +3,7 @@
 ## Unreleased
 
 - [38] Fixed crash on launch if requests folder not found## 0.3.0
+- [30] Added version number to the launch banner
 
 ## 0.3.0
 
