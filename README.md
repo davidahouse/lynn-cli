@@ -15,6 +15,10 @@ Api details are contained in a folder structure that can be managed in a source 
 npm install -g lynn-cli
 ```
 
+## Getting Started
+
+Please see the [Getting Started Guide](getting-started.md)
+
 ## Usage
 
 Interactive mode:
