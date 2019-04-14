@@ -12,7 +12,7 @@ Api details are contained in a folder structure that can be managed in a source 
 ## Install
 
 ```
-npm install -g @davidahouse/lynn-cli
+npm install -g lynn-cli
 ```
 
 ## Usage
