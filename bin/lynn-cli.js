@@ -7,6 +7,7 @@ const vorpal = require('vorpal')()
 const Ora = require('ora')
 const jp = require('jsonpath')
 const ptr = require('json-ptr')
+var pkginfo = require('pkginfo')(module)
 const conf = require('rc')('lynn', {
   // defaults
   workingFolder: process.env.HOME + '/.lynn',
@@ -23,6 +24,7 @@ const operation = require('../lib/operation')
 
 clear()
 console.log(chalk.yellow(figlet.textSync('lynn', {horizontalLayout: 'full'})))
+console.log(chalk.yellow(module.exports.version))
 
 let currentProject = conf.project
 let currentEnvironment = environment.gatherEnvironment(conf.workingFolder, conf.environment, currentProject)
