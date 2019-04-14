@@ -7,6 +7,7 @@
 - [39] Created a getting started guide
 - [43] Renamed `result` command to `response`
 - [46] Environment replacement working in path now
+- [18] Autocomplete works for request command
 
 ## 0.3.0
 

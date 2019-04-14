@@ -257,6 +257,11 @@ if (conf.interactive) {
       })
   vorpal
       .command('request <name>', 'Execute a request inside an OpenAPI spec')
+      .autocomplete({
+        data: function() {
+          return Object.keys(requests)
+        },
+      })
       .action(function(args, callback) {
         if (requests[args.name] == null) {
           vorpal.log(vorpal.chalk.red('Request ' + args.name + ' not found'))
