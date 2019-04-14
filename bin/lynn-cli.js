@@ -30,8 +30,13 @@ let lastFlow = {}
 let lastResult = {}
 const requests = operation.gatherOperations(conf.workingFolder, currentProject)
 const projectInfo = files.projectFileContents(conf.workingFolder, currentProject)
-console.log(chalk.yellow(projectInfo.title))
-console.log(chalk.yellow(projectInfo.description))
+if (projectInfo != null && projectInfo.title != null) {
+  console.log(chalk.yellow(projectInfo.title))
+}
+
+if (projectInfo != null && projectInfo.description != null) {
+  console.log(chalk.yellow(projectInfo.description))
+}
 
 if (conf.interactive) {
   vorpal
@@ -155,10 +160,12 @@ if (conf.interactive) {
   vorpal
       .command('generate', 'Generate the docs for this project')
       .action(function(args, callback) {
-        generate.generateDocs(conf.workingFolder, currentProject, function() {
-          vorpal.log(vorpal.chalk.yellow('Docs generated...'))
-          callback()
-        })
+        vorpal.log(vorpal.chalk.yellow('This ride is undergoing renovation, please come back once the work is completed!'))
+        callback()
+        // generate.generateDocs(conf.workingFolder, currentProject, function() {
+        //   vorpal.log(vorpal.chalk.yellow('Docs generated...'))
+        //   callback()
+        // })
       })
 
   vorpal
@@ -182,6 +189,8 @@ if (conf.interactive) {
       .command('matrix <request> <xaxis> <yaxis>',
           'Execute a series of requests with a combination of environment files')
       .action(function(args, callback) {
+        vorpal.log(vorpal.chalk.yellow('Sorry the Matrix is currently offline. Are you The One?'))
+
         // TODO: Convert over to using the operation api and figure out how to handle iterations
         // const xaxis = args.xaxis.split(',')
         // const yaxis = args.yaxis.split(',')
