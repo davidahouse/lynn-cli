@@ -1,5 +1,9 @@
 ## lynn-cli
 
+## Unreleased
+
+- [38] Fixed crash on launch if requests folder not found## 0.3.0
+
 ## 0.3.0
 
 - Request format changed to use OpenAPI 3 spec files (NOTE: not all openAPI features supported yet)
