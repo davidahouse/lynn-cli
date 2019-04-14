@@ -1,4 +1,4 @@
-# @davidahouse/lynn-cli
+# lynn-cli
 
 [![npm (scoped)](https://img.shields.io/npm/v/lynn-cli.svg)](https://www.npmjs.com/package/lynn-cli)
 [![npm bundle size (minified)](https://img.shields.io/bundlephobia/min/lynn-cli.svg)](https://www.npmjs.com/package/lynn-cli)
