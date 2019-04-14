@@ -6,6 +6,7 @@
 - [30] Added version number to the launch banner
 - [39] Created a getting started guide
 - [43] Renamed `result` command to `response`
+- [46] Environment replacement working in path now
 
 ## 0.3.0
 
