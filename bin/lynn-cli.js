@@ -8,6 +8,7 @@ const Ora = require('ora')
 const jp = require('jsonpath')
 const ptr = require('json-ptr')
 var pkginfo = require('pkginfo')(module)
+const Queue = require('better-queue')
 const conf = require('rc')('lynn', {
   // defaults
   workingFolder: process.env.HOME + '/.lynn',
@@ -156,6 +157,27 @@ if (conf.interactive) {
       .command('set <variable> <value>', 'Set a value in the current environment')
       .action(function(args, callback) {
         currentEnvironment[args.variable] = args.value
+        vorpal.log(vorpal.chalk.yellow(args.variable + ' set to ' + args.value))
+        callback()
+      })
+
+  vorpal
+      .command('setArray <variable>', 'Make an entry in the environment an empty array')
+      .action(function(args, callback) {
+        currentEnvironment[args.variable] = []
+        vorpal.log(vorpal.chalk.yellow(args.variable + ' set to an empty array'))
+        callback()
+      })
+
+  vorpal
+      .command('append <variable> <value>', 'Appends a value to an existing array')
+      .action(function(args, callback) {
+        if (currentEnvironment[args.variable] != null && Array.isArray(currentEnvironment[args.variable])) {
+          currentEnvironment[args.variable].push(args.value)
+          vorpal.log(vorpal.chalk.yellow('Appended ' + args.value + ' to array ' + args.variable))
+        } else {
+          vorpal.log(vorpal.chalk.red(args.variable + ' is not an array, unable to append'))
+        }
         callback()
       })
 
@@ -294,6 +316,73 @@ if (conf.interactive) {
             callback()
           })
         }
+      })
+  vorpal
+      .command('forEach <variable> <request>', 'Execute a series of requests based on an environment variable array')
+      .autocomplete({
+        data: function() {
+          return Object.keys(requests).contact(Object.keys(currentEnvironment))
+        },
+      })
+      .action(function(args, callback) {
+        if (requests[args.request] == null) {
+          vorpal.log(vorpal.chalk.red('Request ' + args.request + ' not found'))
+          callback()
+          return
+        }
+
+        if (currentEnvironment[args.variable] == null) {
+          vorpal.log(vorpal.chalk.red('Environment does not contain ' + args.variable))
+          callback()
+          return
+        } else if (!Array.isArray(currentEnvironment[args.variable])) {
+          vorpal.log(vorpal.chalk.red(args.variable + ' is not an array'))
+          callback()
+          return
+        }
+
+        const rootPath = files.rootPath(conf.workingFolder, 'requests', currentProject)
+        const apiFile = operation.parseApiFile(rootPath + '/' + requests[args.request].file)
+        if (apiFile == null) {
+          vorpal.log(vorpal.chalk.red('Unable to load request'))
+          callback()
+          return
+        }
+
+        const savedEnvironmentValues = currentEnvironment[args.variable]
+        const q = new Queue(function(currentValue, cb) {
+          const spinner = new Ora('--> ' + args.request, 'clock').start()
+          currentEnvironment[args.variable] = currentValue
+          operation.executeOperation(conf.workingFolder, currentEnvironment, apiFile, args.request, currentProject, conf.autoSave, function(result, response) {
+            if (result.statusCode) {
+              if (result.statusCode < 300) {
+                spinner.color = 'green'
+                spinner.succeed('--> ' + args.name + ' ' + chalk.green(response))
+              } else if (result.statusCode > 300) {
+                spinner.fail('--> ' + args.name + ' ' + chalk.red(response))
+              }
+            } else {
+              spinner.fail('--> ' + args.name + ' ' + chalk.red(result.error))
+            }
+            lastResponse = result
+            const capturedValues = operation.capture(apiFile, args.name, result)
+            for (const key in capturedValues) {
+              if (capturedValues.hasOwnProperty(key)) {
+                currentEnvironment[key] = capturedValues[key]
+              }
+            }
+            cb()
+          })
+        })
+
+        q.on('drain', function() {
+          currentEnvironment[args.variable] = savedEnvironmentValues
+          callback()
+        })
+
+        savedEnvironmentValues.forEach((currentValue) => {
+          q.push(currentValue)
+        })
       })
 
   vorpal.delimiter('lynn-cli>').show()
