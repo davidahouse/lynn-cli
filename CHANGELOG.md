@@ -8,6 +8,7 @@
 - [43] Renamed `result` command to `response`
 - [46] Environment replacement working in path now
 - [18] Autocomplete works for request command
+- [34] Added a forEach command
 
 ## 0.3.0
 
