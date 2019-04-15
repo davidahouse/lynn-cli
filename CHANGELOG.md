@@ -1,6 +1,6 @@
 ## lynn-cli
 
-## Unreleased
+## 0.4.0
 
 - [38] Fixed crash on launch if requests folder not found## 0.3.0
 - [30] Added version number to the launch banner
