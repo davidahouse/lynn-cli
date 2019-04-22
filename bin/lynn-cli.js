@@ -299,12 +299,12 @@ if (conf.interactive) {
             if (result.statusCode) {
               if (result.statusCode < 300) {
                 spinner.color = 'green'
-                spinner.succeed('--> ' + args.name + ' ' + chalk.green(response))
+                spinner.succeed('--> ' + chalk.green(response))
               } else if (result.statusCode > 300) {
-                spinner.fail('--> ' + args.name + ' ' + chalk.red(response))
+                spinner.fail('--> ' + chalk.red(response))
               }
             } else {
-              spinner.fail('--> ' + args.name + ' ' + chalk.red(result.error))
+              spinner.fail('--> ' + chalk.red(result.error))
             }
             lastResponse = result
             const capturedValues = operation.capture(apiFile, args.name, result)
@@ -321,7 +321,7 @@ if (conf.interactive) {
       .command('forEach <variable> <request>', 'Execute a series of requests based on an environment variable array')
       .autocomplete({
         data: function() {
-          return Object.keys(requests).contact(Object.keys(currentEnvironment))
+          return Object.keys(requests).concat(Object.keys(currentEnvironment))
         },
       })
       .action(function(args, callback) {
@@ -357,12 +357,12 @@ if (conf.interactive) {
             if (result.statusCode) {
               if (result.statusCode < 300) {
                 spinner.color = 'green'
-                spinner.succeed('--> ' + args.name + ' ' + chalk.green(response))
+                spinner.succeed('--> ' +  chalk.green(response))
               } else if (result.statusCode > 300) {
-                spinner.fail('--> ' + args.name + ' ' + chalk.red(response))
+                spinner.fail('--> ' + chalk.red(response))
               }
             } else {
-              spinner.fail('--> ' + args.name + ' ' + chalk.red(result.error))
+              spinner.fail('--> ' + chalk.red(result.error))
             }
             lastResponse = result
             const capturedValues = operation.capture(apiFile, args.name, result)
