@@ -20,7 +20,6 @@ const conf = require('rc')('lynn', {
 const files = require('../lib/files')
 const environment = require('../lib/environment')
 const generate = require('../lib/generate')
-const schema = require('../lib/schema')
 const operation = require('../lib/operation')
 
 clear()
@@ -29,7 +28,6 @@ console.log(chalk.yellow(module.exports.version))
 
 let currentProject = conf.project
 let currentEnvironment = environment.gatherEnvironment(conf.workingFolder, conf.environment, currentProject)
-let lastFlow = {}
 let lastResponse = {}
 const requests = operation.gatherOperations(conf.workingFolder, currentProject)
 const projectInfo = files.projectFileContents(conf.workingFolder, currentProject)
@@ -39,6 +37,14 @@ if (projectInfo != null && projectInfo.title != null) {
 
 if (projectInfo != null && projectInfo.description != null) {
   console.log(chalk.yellow(projectInfo.description))
+}
+
+// Handle bool conf values from the command line (or other places)
+if (conf.interactive === 'false') {
+  conf.interactive = false
+}
+if (conf.autoSave === 'true') {
+  conf.autoSave = true
 }
 
 if (conf.interactive) {
@@ -394,27 +400,24 @@ if (conf.interactive) {
   vorpal.delimiter('lynn-cli>').show()
 } else {
   if (conf.request != null) {
-    // TODO: Convert over to the operation api
-    // const spinner = new Ora('--> ' + conf.request, 'clock').start()
-    // const requestFile = files.findFile(conf.workingFolder, conf.request, 'requests', currentProject)
-    // if (requestFile != null) {
-    //   request.executeRequest(conf.workingFolder, currentEnvironment, requestFile, currentProject, conf.autoSave,
-    //       function(result, response, captured) {
-    //         if (result.statusCode < 300) {
-    //           spinner.color = 'green'
-    //           spinner.succeed('--> ' + conf.request + ' ' + chalk.green(response))
-    //         } else if (result.statusCode > 300) {
-    //           spinner.fail('--> ' + conf.request + ' ' + chalk.red(response))
-    //         }
-    //         for (const key in captured) {
-    //           if (captured.hasOwnProperty(key)) {
-    //             currentEnvironment[key] = captured[key]
-    //           }
-    //         }
-    //       }
-    //   )
-    // } else {
-    //   spinner.fail(requestFile + ' request file not found!')
-    // }
+    const spinner = new Ora('--> ' + conf.request, 'clock').start()
+    const rootPath = files.rootPath(conf.workingFolder, 'requests', currentProject)
+    const apiFile = operation.parseApiFile(rootPath + '/' + requests[conf.request].file)
+    if (apiFile != null) {
+      operation.executeOperation(conf.workingFolder, currentEnvironment, apiFile, conf.request, currentProject, conf.autoSave, function(result, response) {
+        if (result.statusCode) {
+          if (result.statusCode < 300) {
+            spinner.color = 'green'
+            spinner.succeed('--> ' + chalk.green(response))
+          } else if (result.statusCode > 300) {
+            spinner.fail('--> ' + chalk.red(response))
+          }
+        } else {
+          spinner.fail('--> ' + chalk.red(result.error))
+        }
+      })
+    } else {
+      spinner.fail('--> ' + chalk.red('request not found'))
+    }
   }
 }
