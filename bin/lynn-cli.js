@@ -225,46 +225,72 @@ if (conf.interactive) {
       .command('matrix <request> <xaxis> <yaxis>',
           'Execute a series of requests with a combination of environment files')
       .action(function(args, callback) {
-        vorpal.log(vorpal.chalk.yellow('Sorry the Matrix is currently offline. Are you The One?'))
+        const xaxis = args.xaxis.split(',')
+        const yaxis = args.yaxis.split(',')
 
-        // TODO: Convert over to using the operation api and figure out how to handle iterations
-        // const xaxis = args.xaxis.split(',')
-        // const yaxis = args.yaxis.split(',')
-        // const iterations = []
-        // xaxis.forEach((x) => {
-        //   const envFile = files.findFile(conf.workingFolder, x, 'environment', currentProject)
-        //   if (envFile != null) {
-        //     const envContents = fs.readFileSync(envFile)
-        //     const environment = JSON.parse(envContents)
-        //     for (const key in environment) {
-        //       if (environment.hasOwnProperty(key)) {
-        //         currentEnvironment[key] = environment[key]
-        //       }
-        //     }
-        //   }
+        const rootPath = files.rootPath(conf.workingFolder, 'requests', currentProject)
+        const apiFile = operation.parseApiFile(rootPath + '/' + requests[args.request].file)
+        if (apiFile == null) {
+          callback()
+          return
+        }
 
-        //   yaxis.forEach((y) => {
-        //     const envFile = files.findFile(conf.workingFolder, y, 'environment', currentProject)
-        //     if (envFile != null) {
-        //       const envContents = fs.readFileSync(envFile)
-        //       const environment = JSON.parse(envContents)
-        //       for (const key in environment) {
-        //         if (environment.hasOwnProperty(key)) {
-        //           currentEnvironment[key] = environment[key]
-        //         }
-        //       }
-        //     }
-        //     currentEnvironment['MATRIXTITLE'] = x + ',' + y
-        //     iterations.push(JSON.stringify(currentEnvironment))
-        //   })
-        // })
-        // const requestFile = files.findFile(conf.workingFolder, args.request, 'requests', currentProject)
-        // if (requestFile != null) {
-        //   request.executeIteration(conf.workingFolder, iterations, requestFile, currentProject, conf.autoSave, callback)
-        // } else {
-        //   callback()
-        // }
-        callback()
+        const q = new Queue(function(iteration, cb) {
+          const spinner = new Ora('--> ' + args.request, 'clock').start()
+
+          const xFile = files.findFile(conf.workingFolder, iteration.x, 'environment', currentProject)
+          if (xFile != null) {
+            const envContents = fs.readFileSync(xFile)
+            const environment = JSON.parse(envContents)
+            for (const key in environment) {
+              if (environment.hasOwnProperty(key)) {
+                currentEnvironment[key] = environment[key]
+              }
+            }
+          }
+
+          const yFile = files.findFile(conf.workingFolder, iteration.y, 'environment', currentProject)
+          if (yFile != null) {
+            const envContents = fs.readFileSync(yFile)
+            const environment = JSON.parse(envContents)
+            for (const key in environment) {
+              if (environment.hasOwnProperty(key)) {
+                currentEnvironment[key] = environment[key]
+              }
+            }
+          }
+
+          operation.executeOperation(conf.workingFolder, currentEnvironment, apiFile, args.request, currentProject, conf.autoSave, function(result, response) {
+            if (result.statusCode) {
+              if (result.statusCode < 300) {
+                spinner.color = 'green'
+                spinner.succeed('--> ' +  chalk.green(response))
+              } else if (result.statusCode > 300) {
+                spinner.fail('--> ' + chalk.red(response))
+              }
+            } else {
+              spinner.fail('--> ' + chalk.red(result.error))
+            }
+            lastResponse = result
+            const capturedValues = operation.capture(apiFile, args.name, result)
+            for (const key in capturedValues) {
+              if (capturedValues.hasOwnProperty(key)) {
+                currentEnvironment[key] = capturedValues[key]
+              }
+            }
+            cb()
+          })
+        })
+
+        q.on('drain', function() {
+          callback()
+        })
+
+        xaxis.forEach((x) => {
+          yaxis.forEach((y) => {
+            q.push({x: x, y: y})
+          })
+        })
       })
 
   vorpal
