@@ -184,7 +184,13 @@ if (conf.interactive) {
   vorpal
       .command('generate', 'Generate the docs for this project')
       .action(function(args, callback) {
-        vorpal.log(vorpal.chalk.yellow('This ride is undergoing renovation, please come back once the work is completed!'))
+        for (const key in requests) {
+          if (requests.hasOwnProperty(key)) {
+            generate.generateDocs(conf.workingFolder, currentProject, function() {
+              
+            })
+          }
+        }
         callback()
         // generate.generateDocs(conf.workingFolder, currentProject, function() {
         //   vorpal.log(vorpal.chalk.yellow('Docs generated...'))
