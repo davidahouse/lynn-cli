@@ -1,5 +1,13 @@
 ## lynn-cli
 
+## 0.5.0
+
+- [51] When running forEach, request no longer showing as undefined
+- [50] Request name not duplicated on multiple requests
+- [53] Matrix command working again
+- [54] Non-interactive request command working again
+- [55] Basic doc generation working again
+
 ## 0.4.0
 
 - [38] Fixed crash on launch if requests folder not found## 0.3.0

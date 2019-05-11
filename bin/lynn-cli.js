@@ -20,7 +20,6 @@ const conf = require('rc')('lynn', {
 const files = require('../lib/files')
 const environment = require('../lib/environment')
 const generate = require('../lib/generate')
-const schema = require('../lib/schema')
 const operation = require('../lib/operation')
 
 clear()
@@ -29,7 +28,6 @@ console.log(chalk.yellow(module.exports.version))
 
 let currentProject = conf.project
 let currentEnvironment = environment.gatherEnvironment(conf.workingFolder, conf.environment, currentProject)
-let lastFlow = {}
 let lastResponse = {}
 const requests = operation.gatherOperations(conf.workingFolder, currentProject)
 const projectInfo = files.projectFileContents(conf.workingFolder, currentProject)
@@ -39,6 +37,14 @@ if (projectInfo != null && projectInfo.title != null) {
 
 if (projectInfo != null && projectInfo.description != null) {
   console.log(chalk.yellow(projectInfo.description))
+}
+
+// Handle bool conf values from the command line (or other places)
+if (conf.interactive === 'false') {
+  conf.interactive = false
+}
+if (conf.autoSave === 'true') {
+  conf.autoSave = true
 }
 
 if (conf.interactive) {
@@ -184,18 +190,18 @@ if (conf.interactive) {
   vorpal
       .command('generate', 'Generate the docs for this project')
       .action(function(args, callback) {
+        const rootPath = files.rootPath(conf.workingFolder, 'requests', currentProject)
+        const summaries = []
         for (const key in requests) {
           if (requests.hasOwnProperty(key)) {
-            generate.generateDocs(conf.workingFolder, currentProject, function() {
-              
-            })
+            const apiFile = operation.parseApiFile(rootPath + '/' + requests[key].file)
+            summaries.push(generate.generateDocs(conf.workingFolder, key, apiFile, currentProject))
+            console.log(chalk.green('✅ --> ' + key + ' doc generated'))
           }
         }
+        generate.generateReadme(conf.workingFolder, currentProject, summaries)
+        console.log(chalk.green('✅ --> Readme.md generated'))
         callback()
-        // generate.generateDocs(conf.workingFolder, currentProject, function() {
-        //   vorpal.log(vorpal.chalk.yellow('Docs generated...'))
-        //   callback()
-        // })
       })
 
   vorpal
@@ -219,46 +225,72 @@ if (conf.interactive) {
       .command('matrix <request> <xaxis> <yaxis>',
           'Execute a series of requests with a combination of environment files')
       .action(function(args, callback) {
-        vorpal.log(vorpal.chalk.yellow('Sorry the Matrix is currently offline. Are you The One?'))
+        const xaxis = args.xaxis.split(',')
+        const yaxis = args.yaxis.split(',')
 
-        // TODO: Convert over to using the operation api and figure out how to handle iterations
-        // const xaxis = args.xaxis.split(',')
-        // const yaxis = args.yaxis.split(',')
-        // const iterations = []
-        // xaxis.forEach((x) => {
-        //   const envFile = files.findFile(conf.workingFolder, x, 'environment', currentProject)
-        //   if (envFile != null) {
-        //     const envContents = fs.readFileSync(envFile)
-        //     const environment = JSON.parse(envContents)
-        //     for (const key in environment) {
-        //       if (environment.hasOwnProperty(key)) {
-        //         currentEnvironment[key] = environment[key]
-        //       }
-        //     }
-        //   }
+        const rootPath = files.rootPath(conf.workingFolder, 'requests', currentProject)
+        const apiFile = operation.parseApiFile(rootPath + '/' + requests[args.request].file)
+        if (apiFile == null) {
+          callback()
+          return
+        }
 
-        //   yaxis.forEach((y) => {
-        //     const envFile = files.findFile(conf.workingFolder, y, 'environment', currentProject)
-        //     if (envFile != null) {
-        //       const envContents = fs.readFileSync(envFile)
-        //       const environment = JSON.parse(envContents)
-        //       for (const key in environment) {
-        //         if (environment.hasOwnProperty(key)) {
-        //           currentEnvironment[key] = environment[key]
-        //         }
-        //       }
-        //     }
-        //     currentEnvironment['MATRIXTITLE'] = x + ',' + y
-        //     iterations.push(JSON.stringify(currentEnvironment))
-        //   })
-        // })
-        // const requestFile = files.findFile(conf.workingFolder, args.request, 'requests', currentProject)
-        // if (requestFile != null) {
-        //   request.executeIteration(conf.workingFolder, iterations, requestFile, currentProject, conf.autoSave, callback)
-        // } else {
-        //   callback()
-        // }
-        callback()
+        const q = new Queue(function(iteration, cb) {
+          const spinner = new Ora('--> ' + args.request, 'clock').start()
+
+          const xFile = files.findFile(conf.workingFolder, iteration.x, 'environment', currentProject)
+          if (xFile != null) {
+            const envContents = fs.readFileSync(xFile)
+            const environment = JSON.parse(envContents)
+            for (const key in environment) {
+              if (environment.hasOwnProperty(key)) {
+                currentEnvironment[key] = environment[key]
+              }
+            }
+          }
+
+          const yFile = files.findFile(conf.workingFolder, iteration.y, 'environment', currentProject)
+          if (yFile != null) {
+            const envContents = fs.readFileSync(yFile)
+            const environment = JSON.parse(envContents)
+            for (const key in environment) {
+              if (environment.hasOwnProperty(key)) {
+                currentEnvironment[key] = environment[key]
+              }
+            }
+          }
+
+          operation.executeOperation(conf.workingFolder, currentEnvironment, apiFile, args.request, currentProject, conf.autoSave, function(result, response) {
+            if (result.statusCode) {
+              if (result.statusCode < 300) {
+                spinner.color = 'green'
+                spinner.succeed('--> ' +  chalk.green(response))
+              } else if (result.statusCode > 300) {
+                spinner.fail('--> ' + chalk.red(response))
+              }
+            } else {
+              spinner.fail('--> ' + chalk.red(result.error))
+            }
+            lastResponse = result
+            const capturedValues = operation.capture(apiFile, args.name, result)
+            for (const key in capturedValues) {
+              if (capturedValues.hasOwnProperty(key)) {
+                currentEnvironment[key] = capturedValues[key]
+              }
+            }
+            cb()
+          })
+        })
+
+        q.on('drain', function() {
+          callback()
+        })
+
+        xaxis.forEach((x) => {
+          yaxis.forEach((y) => {
+            q.push({x: x, y: y})
+          })
+        })
       })
 
   vorpal
@@ -394,27 +426,24 @@ if (conf.interactive) {
   vorpal.delimiter('lynn-cli>').show()
 } else {
   if (conf.request != null) {
-    // TODO: Convert over to the operation api
-    // const spinner = new Ora('--> ' + conf.request, 'clock').start()
-    // const requestFile = files.findFile(conf.workingFolder, conf.request, 'requests', currentProject)
-    // if (requestFile != null) {
-    //   request.executeRequest(conf.workingFolder, currentEnvironment, requestFile, currentProject, conf.autoSave,
-    //       function(result, response, captured) {
-    //         if (result.statusCode < 300) {
-    //           spinner.color = 'green'
-    //           spinner.succeed('--> ' + conf.request + ' ' + chalk.green(response))
-    //         } else if (result.statusCode > 300) {
-    //           spinner.fail('--> ' + conf.request + ' ' + chalk.red(response))
-    //         }
-    //         for (const key in captured) {
-    //           if (captured.hasOwnProperty(key)) {
-    //             currentEnvironment[key] = captured[key]
-    //           }
-    //         }
-    //       }
-    //   )
-    // } else {
-    //   spinner.fail(requestFile + ' request file not found!')
-    // }
+    const spinner = new Ora('--> ' + conf.request, 'clock').start()
+    const rootPath = files.rootPath(conf.workingFolder, 'requests', currentProject)
+    const apiFile = operation.parseApiFile(rootPath + '/' + requests[conf.request].file)
+    if (apiFile != null) {
+      operation.executeOperation(conf.workingFolder, currentEnvironment, apiFile, conf.request, currentProject, conf.autoSave, function(result, response) {
+        if (result.statusCode) {
+          if (result.statusCode < 300) {
+            spinner.color = 'green'
+            spinner.succeed('--> ' + chalk.green(response))
+          } else if (result.statusCode > 300) {
+            spinner.fail('--> ' + chalk.red(response))
+          }
+        } else {
+          spinner.fail('--> ' + chalk.red(result.error))
+        }
+      })
+    } else {
+      spinner.fail('--> ' + chalk.red('request not found'))
+    }
   }
 }
