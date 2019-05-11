@@ -20,7 +20,7 @@
     "js-yaml": "^3.13.1",
     "json-ptr": "^1.1.2",
     "jsonpath": "^1.0.1",
-    "lynn-request": "^0.1.2",
+    "lynn-request": "^0.2.0",
     "mkdirp": "^0.5.1",
     "ora": "^3.2.0",
     "pkginfo": "^0.4.1",
