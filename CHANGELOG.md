@@ -1,5 +1,9 @@
 ## lynn-cli
 
+## 0.5.1
+
+- Basic support for multipart and json body in requests
+
 ## 0.5.0
 
 - [51] When running forEach, request no longer showing as undefined
