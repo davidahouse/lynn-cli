@@ -1,7 +1,7 @@
 {
   "name": "lynn-cli",
   "main": "bin/lynn-cli.js",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "A command line app for executing lynn requests",
   "license": "MIT",
   "repository": "davidahouse/lynn-cli",
