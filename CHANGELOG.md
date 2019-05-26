@@ -1,5 +1,9 @@
 ## lynn-cli
 
+## 0.6.0
+
+- Added support for $ref file references in the request body to easily support json bodies
+
 ## 0.5.1
 
 - Basic support for multipart and json body in requests
