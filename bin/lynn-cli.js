@@ -168,6 +168,14 @@ if (conf.interactive) {
       })
 
   vorpal
+      .command('eval <variable> <value>', 'Set a value in the current environment by evaluating a javascript statement')
+      .action(function(args, callback) {
+        currentEnvironment[args.variable] = eval(args.value)
+        vorpal.log(vorpal.chalk.yellow(args.variable + ' set to ' + args.value))
+        callback()
+      })
+
+  vorpal
       .command('setArray <variable>', 'Make an entry in the environment an empty array')
       .action(function(args, callback) {
         currentEnvironment[args.variable] = []
