@@ -21,6 +21,7 @@ const files = require('../lib/files')
 const environment = require('../lib/environment')
 const generate = require('../lib/generate')
 const operation = require('../lib/operation')
+const request = require('../lib/request')
 
 clear()
 console.log(chalk.yellow(figlet.textSync('lynn', {horizontalLayout: 'full'})))
@@ -29,7 +30,10 @@ console.log(chalk.yellow(module.exports.version))
 let currentProject = conf.project
 let currentEnvironment = environment.gatherEnvironment(conf.workingFolder, conf.environment, currentProject)
 let lastResponse = {}
-const requests = operation.gatherOperations(conf.workingFolder, currentProject)
+const foundOperations = operation.gatherOperations(conf.workingFolder, currentProject)
+const foundRequests = request.gatherRequests(conf.workingFolder, currentProject)
+const requests = Object.assign({}, foundOperations, foundRequests)
+
 const projectInfo = files.projectFileContents(conf.workingFolder, currentProject)
 if (projectInfo != null && projectInfo.title != null) {
   console.log(chalk.yellow(projectInfo.title))
@@ -202,9 +206,15 @@ if (conf.interactive) {
         const summaries = []
         for (const key in requests) {
           if (requests.hasOwnProperty(key)) {
-            const apiFile = operation.parseApiFile(rootPath + '/' + requests[key].file)
-            summaries.push(generate.generateDocs(conf.workingFolder, key, apiFile, currentProject))
-            console.log(chalk.green('✅ --> ' + key + ' doc generated'))
+            if (requests[key].kind === 'operation') {
+              const apiFile = operation.parseApiFile(rootPath + '/' + requests[key].file)
+              summaries.push(generate.generateDocs(conf.workingFolder, key, apiFile, currentProject))
+              console.log(chalk.green('✅ --> ' + key + ' doc generated'))  
+            } else {
+              const apiFile = request.parseApiFile(rootPath + '/' + requests[key].file)
+              summaries.push(generate.generateDocs(conf.workingFolder, key, apiFile, currentProject))
+              console.log(chalk.green('✅ --> ' + key + ' doc generated'))  
+            }
           }
         }
         generate.generateReadme(conf.workingFolder, currentProject, summaries)
@@ -338,29 +348,56 @@ if (conf.interactive) {
         }
 
         const spinner = new Ora('--> ' + args.name, 'clock').start()
-        const rootPath = files.rootPath(conf.workingFolder, 'requests', currentProject)
-        const apiFile = operation.parseApiFile(rootPath + '/' + requests[args.name].file)
-        if (apiFile != null) {
-          operation.executeOperation(conf.workingFolder, currentEnvironment, apiFile, args.name, currentProject, conf.autoSave, function(result, response) {
-            if (result.statusCode) {
-              if (result.statusCode < 300) {
-                spinner.color = 'green'
-                spinner.succeed('--> ' + chalk.green(response))
-              } else if (result.statusCode > 300) {
-                spinner.fail('--> ' + chalk.red(response))
+        if (requests[args.name].kind === 'operation') {
+          const rootPath = files.rootPath(conf.workingFolder, 'operations', currentProject)
+          const apiFile = operation.parseApiFile(rootPath + '/' + requests[args.name].file)
+          if (apiFile != null) {
+            operation.executeOperation(conf.workingFolder, currentEnvironment, apiFile, args.name, currentProject, conf.autoSave, function(result, response) {
+              if (result.statusCode) {
+                if (result.statusCode < 300) {
+                  spinner.color = 'green'
+                  spinner.succeed('--> ' + chalk.green(response))
+                } else if (result.statusCode > 300) {
+                  spinner.fail('--> ' + chalk.red(response))
+                }
+              } else {
+                spinner.fail('--> ' + chalk.red(result.error))
               }
-            } else {
-              spinner.fail('--> ' + chalk.red(result.error))
-            }
-            lastResponse = result
-            const capturedValues = operation.capture(apiFile, args.name, result)
-            for (const key in capturedValues) {
-              if (capturedValues.hasOwnProperty(key)) {
-                currentEnvironment[key] = capturedValues[key]
+              lastResponse = result
+              const capturedValues = operation.capture(apiFile, args.name, result)
+              for (const key in capturedValues) {
+                if (capturedValues.hasOwnProperty(key)) {
+                  currentEnvironment[key] = capturedValues[key]
+                }
               }
-            }
-            callback()
-          })
+              callback()
+            })
+          }
+        } else {
+          const rootPath = files.rootPath(conf.workingFolder, 'requests', currentProject)
+          const apiFile = request.parseApiFile(rootPath + '/' + requests[args.name].file)
+          if (apiFile != null) {
+            request.executeRequest(conf.workingFolder, currentEnvironment, apiFile, args.name, currentProject, conf.autoSave, function(result, response) {
+              if (result.statusCode) {
+                if (result.statusCode < 300) {
+                  spinner.color = 'green'
+                  spinner.succeed('--> ' + chalk.green(response))
+                } else if (result.statusCode > 300) {
+                  spinner.fail('--> ' + chalk.red(response))
+                }
+              } else {
+                spinner.fail('--> ' + chalk.red(result.error))
+              }
+              lastResponse = result
+              const capturedValues = request.capture(apiFile, args.name, result)
+              for (const key in capturedValues) {
+                if (capturedValues.hasOwnProperty(key)) {
+                  currentEnvironment[key] = capturedValues[key]
+                }
+              }
+              callback()
+            })
+          }
         }
       })
   vorpal
