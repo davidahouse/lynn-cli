@@ -7,7 +7,7 @@ const vorpal = require('vorpal')()
 const Ora = require('ora')
 const jp = require('jsonpath')
 const ptr = require('json-ptr')
-var pkginfo = require('pkginfo')(module)
+const pkginfo = require('pkginfo')(module)
 const Queue = require('better-queue')
 const conf = require('rc')('lynn', {
   // defaults
@@ -209,11 +209,11 @@ if (conf.interactive) {
             if (requests[key].kind === 'operation') {
               const apiFile = operation.parseApiFile(rootPath + '/' + requests[key].file)
               summaries.push(generate.generateDocs(conf.workingFolder, key, apiFile, currentProject))
-              console.log(chalk.green('✅ --> ' + key + ' doc generated'))  
+              console.log(chalk.green('✅ --> ' + key + ' doc generated'))
             } else {
               const apiFile = request.parseApiFile(rootPath + '/' + requests[key].file)
               summaries.push(generate.generateDocs(conf.workingFolder, key, apiFile, currentProject))
-              console.log(chalk.green('✅ --> ' + key + ' doc generated'))  
+              console.log(chalk.green('✅ --> ' + key + ' doc generated'))
             }
           }
         }
@@ -282,7 +282,7 @@ if (conf.interactive) {
             if (result.statusCode) {
               if (result.statusCode < 300) {
                 spinner.color = 'green'
-                spinner.succeed('--> ' +  chalk.green(response))
+                spinner.succeed('--> ' + chalk.green(response))
               } else if (result.statusCode > 300) {
                 spinner.fail('--> ' + chalk.red(response))
               }
@@ -440,7 +440,7 @@ if (conf.interactive) {
             if (result.statusCode) {
               if (result.statusCode < 300) {
                 spinner.color = 'green'
-                spinner.succeed('--> ' +  chalk.green(response))
+                spinner.succeed('--> ' + chalk.green(response))
               } else if (result.statusCode > 300) {
                 spinner.fail('--> ' + chalk.red(response))
               }
