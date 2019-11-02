@@ -29,27 +29,16 @@ console.log(
 );
 console.log(chalk.yellow(module.exports.version));
 
-let currentProject = conf.project;
 let currentEnvironment = environment.gatherEnvironment(
   conf.workingFolder,
-  conf.environment,
-  currentProject
+  conf.environment
 );
 let lastResponse = {};
-const foundOperations = operation.gatherOperations(
-  conf.workingFolder,
-  currentProject
-);
-const foundRequests = request.gatherRequests(
-  conf.workingFolder,
-  currentProject
-);
+const foundOperations = operation.gatherOperations(conf.workingFolder);
+const foundRequests = request.gatherRequests(conf.workingFolder);
 const requests = Object.assign({}, foundOperations, foundRequests);
 
-const projectInfo = files.projectFileContents(
-  conf.workingFolder,
-  currentProject
-);
+const projectInfo = files.projectFileContents(conf.workingFolder);
 if (projectInfo != null && projectInfo.title != null) {
   console.log(chalk.yellow(projectInfo.title));
 }
@@ -68,33 +57,13 @@ if (conf.autoSave === 'true') {
 
 if (conf.interactive) {
   vorpal
-    .command('project [project]', 'Select a project or display current project')
-    .autocomplete({
-      data: function() {
-        return files.listProjects(conf.workingFolder);
-      }
-    })
-    .action(function(args, callback) {
-      if (args.project != null) {
-        currentProject = args.project;
-      } else {
-        vorpal.log(vorpal.chalk.yellow('Current project: ' + currentProject));
-      }
-      callback();
-    });
-
-  vorpal
     .command(
       'environment [env]',
       'Add to current environment or display current environment'
     )
     .autocomplete({
       data: function() {
-        return files.listFiles(
-          conf.workingFolder,
-          'environment',
-          currentProject
-        );
+        return files.listFiles(conf.workingFolder, 'environment');
       }
     })
     .action(function(args, callback) {
@@ -102,8 +71,7 @@ if (conf.interactive) {
         const envFile = files.findFile(
           conf.workingFolder,
           args.env,
-          'environment',
-          currentProject
+          'environment'
         );
         if (envFile != null) {
           const envContents = fs.readFileSync(envFile);
@@ -249,11 +217,7 @@ if (conf.interactive) {
   vorpal
     .command('generate', 'Generate the docs for this project')
     .action(function(args, callback) {
-      const rootPath = files.rootPath(
-        conf.workingFolder,
-        'requests',
-        currentProject
-      );
+      const rootPath = files.rootPath(conf.workingFolder, 'requests');
       const summaries = [];
       for (const key in requests) {
         if (requests.hasOwnProperty(key)) {
@@ -262,12 +226,7 @@ if (conf.interactive) {
               rootPath + '/' + requests[key].file
             );
             summaries.push(
-              generate.generateDocs(
-                conf.workingFolder,
-                key,
-                apiFile,
-                currentProject
-              )
+              generate.generateDocs(conf.workingFolder, key, apiFile)
             );
             console.log(chalk.green('✅ --> ' + key + ' doc generated'));
           } else {
@@ -275,18 +234,13 @@ if (conf.interactive) {
               rootPath + '/' + requests[key].file
             );
             summaries.push(
-              generate.generateDocs(
-                conf.workingFolder,
-                key,
-                apiFile,
-                currentProject
-              )
+              generate.generateDocs(conf.workingFolder, key, apiFile)
             );
             console.log(chalk.green('✅ --> ' + key + ' doc generated'));
           }
         }
       }
-      generate.generateReadme(conf.workingFolder, currentProject, summaries);
+      generate.generateReadme(conf.workingFolder, summaries);
       console.log(chalk.green('✅ --> Readme.md generated'));
       callback();
     });
@@ -323,11 +277,7 @@ if (conf.interactive) {
       const xaxis = args.xaxis.split(',');
       const yaxis = args.yaxis.split(',');
 
-      const rootPath = files.rootPath(
-        conf.workingFolder,
-        'requests',
-        currentProject
-      );
+      const rootPath = files.rootPath(conf.workingFolder, 'requests');
       const apiFile = operation.parseApiFile(
         rootPath + '/' + requests[args.request].file
       );
@@ -342,8 +292,7 @@ if (conf.interactive) {
         const xFile = files.findFile(
           conf.workingFolder,
           iteration.x,
-          'environment',
-          currentProject
+          'environment'
         );
         if (xFile != null) {
           const envContents = fs.readFileSync(xFile);
@@ -358,8 +307,7 @@ if (conf.interactive) {
         const yFile = files.findFile(
           conf.workingFolder,
           iteration.y,
-          'environment',
-          currentProject
+          'environment'
         );
         if (yFile != null) {
           const envContents = fs.readFileSync(yFile);
@@ -376,7 +324,6 @@ if (conf.interactive) {
           currentEnvironment,
           apiFile,
           args.request,
-          currentProject,
           conf.autoSave,
           function(result, response) {
             if (result.statusCode) {
@@ -420,11 +367,6 @@ if (conf.interactive) {
     .command('config', 'Show the current config')
     .action(function(args, callback) {
       vorpal.log(vorpal.chalk.yellow('Working Folder: ' + conf.workingFolder));
-      if (currentProject) {
-        vorpal.log(vorpal.chalk.yellow('Current Project: ' + currentProject));
-      } else {
-        vorpal.log(vorpal.chalk.yellow('No project set'));
-      }
       vorpal.log(vorpal.chalk.yellow('Auto Save is ' + conf.autoSave));
       callback();
     });
@@ -454,11 +396,7 @@ if (conf.interactive) {
 
       const spinner = new Ora('--> ' + args.name, 'clock').start();
       if (requests[args.name].kind === 'operation') {
-        const rootPath = files.rootPath(
-          conf.workingFolder,
-          'operations',
-          currentProject
-        );
+        const rootPath = files.rootPath(conf.workingFolder, 'operations');
         const apiFile = operation.parseApiFile(
           rootPath + '/' + requests[args.name].file
         );
@@ -468,7 +406,6 @@ if (conf.interactive) {
             currentEnvironment,
             apiFile,
             args.name,
-            currentProject,
             conf.autoSave,
             function(result, response) {
               if (result.statusCode) {
@@ -497,11 +434,7 @@ if (conf.interactive) {
           );
         }
       } else {
-        const rootPath = files.rootPath(
-          conf.workingFolder,
-          'requests',
-          currentProject
-        );
+        const rootPath = files.rootPath(conf.workingFolder, 'requests');
         const apiFile = request.parseApiFile(
           rootPath + '/' + requests[args.name].file
         );
@@ -511,7 +444,6 @@ if (conf.interactive) {
             currentEnvironment,
             apiFile,
             args.name,
-            currentProject,
             conf.autoSave,
             function(result, response) {
               if (result.statusCode) {
@@ -570,11 +502,7 @@ if (conf.interactive) {
         return;
       }
 
-      const rootPath = files.rootPath(
-        conf.workingFolder,
-        'requests',
-        currentProject
-      );
+      const rootPath = files.rootPath(conf.workingFolder, 'requests');
       const apiFile = operation.parseApiFile(
         rootPath + '/' + requests[args.request].file
       );
@@ -593,7 +521,6 @@ if (conf.interactive) {
           currentEnvironment,
           apiFile,
           args.request,
-          currentProject,
           conf.autoSave,
           function(result, response) {
             if (result.statusCode) {
@@ -637,11 +564,7 @@ if (conf.interactive) {
 } else {
   if (conf.request != null) {
     const spinner = new Ora('--> ' + conf.request, 'clock').start();
-    const rootPath = files.rootPath(
-      conf.workingFolder,
-      'requests',
-      currentProject
-    );
+    const rootPath = files.rootPath(conf.workingFolder, 'requests');
     const apiFile = operation.parseApiFile(
       rootPath + '/' + requests[conf.request].file
     );
@@ -651,7 +574,6 @@ if (conf.interactive) {
         currentEnvironment,
         apiFile,
         conf.request,
-        currentProject,
         conf.autoSave,
         function(result, response) {
           if (result.statusCode) {
