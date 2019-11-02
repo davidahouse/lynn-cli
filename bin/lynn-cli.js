@@ -105,12 +105,16 @@ if (conf.interactive) {
     .command('response [key]', 'View the contents of the last response')
     .action(function(args, callback) {
       if (args.key) {
-        vorpal.log(vorpal.chalk.yellow(JSON.stringify(lastResponse[args.key])));
+        vorpal.log(
+          vorpal.chalk.yellow(JSON.stringify(lastResponse[args.key], null, 2))
+        );
       } else {
         for (const key in lastResponse) {
           if (lastResponse.hasOwnProperty(key)) {
             vorpal.log(vorpal.chalk.yellow(key + ':'));
-            vorpal.log(vorpal.chalk.yellow(JSON.stringify(lastResponse[key])));
+            vorpal.log(
+              vorpal.chalk.yellow(JSON.stringify(lastResponse[key], null, 2))
+            );
           }
         }
       }
@@ -150,7 +154,7 @@ if (conf.interactive) {
         } else {
           found = ptr.get(lastResponse.body, args.path);
         }
-        vorpal.log(vorpal.chalk.yellow(JSON.stringify(found)));
+        vorpal.log(vorpal.chalk.yellow(JSON.stringify(found, null, 2)));
       } catch (e) {
         vorpal.log(vorpal.chalk.red('Error performing query ' + e));
       }
