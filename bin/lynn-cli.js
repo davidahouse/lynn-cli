@@ -632,6 +632,7 @@ if (conf.interactive) {
       });
     });
 
+  vorpal.history('stampede-cli');
   vorpal.delimiter('lynn-cli>').show();
 } else {
   if (conf.request != null) {
