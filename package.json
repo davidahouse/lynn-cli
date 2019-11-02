@@ -28,41 +28,16 @@
     "vorpal": "^1.12.0"
   },
   "devDependencies": {
+    "chai": "^4.2.0",
     "eslint": "^6.5.1",
-    "eslint-config-google": "^0.14.0"
+    "eslint-config-google": "^0.14.0",
+    "eslint-config-prettier": "^6.5.0",
+    "mocha": "^6.2.2"
   },
   "scripts": {
+    "start": "bin/lynn-cli.js",
+    "test": "mocha",
     "lint": "eslint $(find . -name \"*.js\" -not -path \"./node_modules/*\" -not -path \"./public/*\")",
     "lint-fix": "eslint --fix $(find . -name \"*.js\" -not -path \"./node_modules/*\" -not -path \"./public/*\")"
-  },
-  "eslintConfig": {
-    "env": {
-      "node": true,
-      "es6": true
-    },
-    "extends": [
-      "eslint:recommended",
-      "google"
-    ],
-    "parserOptions": {
-      "ecmaVersion": 2017,
-      "ecmaFeatures": {
-        "impliedStrict": true
-      },
-      "sourceType": "module"
-    },
-    "rules": {
-      "no-console": 0,
-      "max-len": [
-        "error",
-        {
-          "code": 120
-        }
-      ],
-      "semi": [
-        "error",
-        "never"
-      ]
-    }
   }
 }
