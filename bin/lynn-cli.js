@@ -18,7 +18,6 @@ const conf = require("rc")("lynn", {
 
 // Internal helpers
 const files = require("../lib/files");
-const generate = require("../lib/generate");
 const request = require("../lib/request");
 const state = require("../lib/state");
 
@@ -30,6 +29,15 @@ const commandReset = require("../commands/reset");
 const commandQuery = require("../commands/query");
 const commandSet = require("../commands/set");
 const commandEval = require("../commands/eval");
+const commandSetArray = require("../commands/setArray");
+const commandAppend = require("../commands/append");
+const commandGenerate = require("../commands/generate");
+const commandSchema = require("../commands/schema");
+const commandMatrix = require("../commands/matrix");
+const commandConfig = require("../commands/config");
+const commandRequests = require("../commands/requests");
+const commandRequest = require("../commands/request");
+const commandForEach = require("../commands/forEach");
 
 clear();
 console.log(
@@ -120,9 +128,7 @@ if (conf.interactive) {
       "Make an entry in the environment an empty array"
     )
     .action(function(args, callback) {
-      currentEnvironment[args.variable] = [];
-      vorpal.log(vorpal.chalk.yellow(args.variable + " set to an empty array"));
-      callback();
+      commandSetArray.handle(args.variable, currentState, vorpal, callback);
     });
 
   vorpal
@@ -131,39 +137,19 @@ if (conf.interactive) {
       "Appends a value to an existing array"
     )
     .action(function(args, callback) {
-      if (
-        currentEnvironment[args.variable] != null &&
-        Array.isArray(currentEnvironment[args.variable])
-      ) {
-        currentEnvironment[args.variable].push(args.value);
-        vorpal.log(
-          vorpal.chalk.yellow(
-            "Appended " + args.value + " to array " + args.variable
-          )
-        );
-      } else {
-        vorpal.log(
-          vorpal.chalk.red(args.variable + " is not an array, unable to append")
-        );
-      }
-      callback();
+      commandAppend.handle(
+        args.variable,
+        args.value,
+        currentState,
+        vorpal,
+        callback
+      );
     });
 
   vorpal
     .command("generate", "Generate the docs for this project")
     .action(function(args, callback) {
-      const rootPath = files.rootPath(conf.workingFolder, "requests");
-      const summaries = [];
-      for (const key in requests) {
-        const apiFile = request.parseApiFile(
-          rootPath + "/" + requests[key].file
-        );
-        summaries.push(generate.generateDocs(conf.workingFolder, key, apiFile));
-        console.log(chalk.green("✅ --> " + key + " doc generated"));
-      }
-      generate.generateReadme(conf.workingFolder, summaries);
-      console.log(chalk.green("✅ --> Readme.md generated"));
-      callback();
+      commandGenerate.handle(currentState, vorpal, callback);
     });
 
   vorpal
@@ -171,22 +157,8 @@ if (conf.interactive) {
       "schema",
       "Generate the list of paths found in the response data json"
     )
-    .option(
-      "-d, --fordocs",
-      "Print out the schema for copy/pasting into the docs"
-    )
     .action(function(args, callback) {
-      if (lastResponse != null && lastResponse.body != null) {
-        const schema = ptr.flatten(lastResponse.body);
-        for (const key in schema) {
-          if (schema.hasOwnProperty(key) && key != "") {
-            vorpal.log(vorpal.chalk.yellow(key));
-          }
-        }
-      } else {
-        vorpal.log(vorpal.chalk.yellow("No response found to map schema from"));
-      }
-      callback();
+      commandSchema.handle(currentState, vorpal, callback);
     });
 
   vorpal
@@ -195,107 +167,26 @@ if (conf.interactive) {
       "Execute a series of requests with a combination of environment files"
     )
     .action(function(args, callback) {
-      const xaxis = args.xaxis.split(",");
-      const yaxis = args.yaxis.split(",");
-
-      const rootPath = files.rootPath(conf.workingFolder, "requests");
-      const apiFile = request.parseApiFile(
-        rootPath + "/" + requests[args.request].file
+      commandMatrix.handle(
+        args.request,
+        args.xaxis,
+        args.yaxis,
+        currentState,
+        vorpal,
+        callback
       );
-      if (apiFile == null) {
-        callback();
-        return;
-      }
-
-      const q = new Queue(function(iteration, cb) {
-        const spinner = new Ora("--> " + args.request, "clock").start();
-
-        const xFile = files.findFile(
-          conf.workingFolder,
-          iteration.x,
-          "environment"
-        );
-        if (xFile != null) {
-          const envContents = fs.readFileSync(xFile);
-          const environment = JSON.parse(envContents);
-          for (const key in environment) {
-            if (environment.hasOwnProperty(key)) {
-              currentEnvironment[key] = environment[key];
-            }
-          }
-        }
-
-        const yFile = files.findFile(
-          conf.workingFolder,
-          iteration.y,
-          "environment"
-        );
-        if (yFile != null) {
-          const envContents = fs.readFileSync(yFile);
-          const environment = JSON.parse(envContents);
-          for (const key in environment) {
-            if (environment.hasOwnProperty(key)) {
-              currentEnvironment[key] = environment[key];
-            }
-          }
-        }
-
-        request.executeRequest(
-          conf.workingFolder,
-          currentEnvironment,
-          apiFile,
-          args.request,
-          conf.autoSave,
-          function(result, response) {
-            if (result.statusCode) {
-              if (result.statusCode < 300) {
-                spinner.color = "green";
-                spinner.succeed("--> " + chalk.green(response));
-              } else if (result.statusCode > 300) {
-                spinner.fail("--> " + chalk.red(response));
-              }
-            } else {
-              spinner.fail("--> " + chalk.red(result.error));
-            }
-            lastResponse = result;
-            const capturedValues = request.capture(apiFile, args.name, result);
-            for (const key in capturedValues) {
-              if (capturedValues.hasOwnProperty(key)) {
-                currentEnvironment[key] = capturedValues[key];
-              }
-            }
-            cb();
-          }
-        );
-      });
-
-      q.on("drain", function() {
-        callback();
-      });
-
-      xaxis.forEach(x => {
-        yaxis.forEach(y => {
-          q.push({ x: x, y: y });
-        });
-      });
     });
 
   vorpal
     .command("config", "Show the current config")
     .action(function(args, callback) {
-      vorpal.log(vorpal.chalk.yellow("Working Folder: " + conf.workingFolder));
-      vorpal.log(vorpal.chalk.yellow("Auto Save is " + conf.autoSave));
-      callback();
+      commandConfig.handle(currentState, vorpal, callback);
     });
+
   vorpal
     .command("requests", "List all the requests available")
     .action(function(args, callback) {
-      for (const key in requests) {
-        if (requests.hasOwnProperty(key)) {
-          vorpal.log(vorpal.chalk.yellow(key) + " - " + requests[key].summary);
-        }
-      }
-      callback();
+      commandRequests.handle(currentState, vorpal, callback);
     });
   vorpal
     .command("request <name>", "Execute a request inside an OpenAPI spec")
@@ -305,46 +196,7 @@ if (conf.interactive) {
       }
     })
     .action(function(args, callback) {
-      if (requests[args.name] == null) {
-        vorpal.log(vorpal.chalk.red("Request " + args.name + " not found"));
-        callback();
-        return;
-      }
-
-      const spinner = new Ora("--> " + args.name, "clock").start();
-      const rootPath = files.rootPath(conf.workingFolder, "requests");
-      const apiFile = request.parseApiFile(
-        rootPath + "/" + requests[args.name].file
-      );
-      if (apiFile != null) {
-        request.executeRequest(
-          conf.workingFolder,
-          currentEnvironment,
-          apiFile,
-          args.name,
-          conf.autoSave,
-          function(result, response) {
-            if (result.statusCode) {
-              if (result.statusCode < 300) {
-                spinner.color = "green";
-                spinner.succeed("--> " + chalk.green(response));
-              } else if (result.statusCode > 300) {
-                spinner.fail("--> " + chalk.red(response));
-              }
-            } else {
-              spinner.fail("--> " + chalk.red(result.error));
-            }
-            lastResponse = result;
-            const capturedValues = request.capture(apiFile, args.name, result);
-            for (const key in capturedValues) {
-              if (capturedValues.hasOwnProperty(key)) {
-                currentEnvironment[key] = capturedValues[key];
-              }
-            }
-            callback();
-          }
-        );
-      }
+      commandRequest.handle(args.name, currentState, vorpal, callback);
     });
   vorpal
     .command(
@@ -357,75 +209,13 @@ if (conf.interactive) {
       }
     })
     .action(function(args, callback) {
-      if (requests[args.request] == null) {
-        vorpal.log(vorpal.chalk.red("Request " + args.request + " not found"));
-        callback();
-        return;
-      }
-
-      if (currentEnvironment[args.variable] == null) {
-        vorpal.log(
-          vorpal.chalk.red("Environment does not contain " + args.variable)
-        );
-        callback();
-        return;
-      } else if (!Array.isArray(currentEnvironment[args.variable])) {
-        vorpal.log(vorpal.chalk.red(args.variable + " is not an array"));
-        callback();
-        return;
-      }
-
-      const rootPath = files.rootPath(conf.workingFolder, "requests");
-      const apiFile = request.parseApiFile(
-        rootPath + "/" + requests[args.request].file
+      commandForEach.handle(
+        args.variable,
+        args.request,
+        currentState,
+        vorpal,
+        callback
       );
-      if (apiFile == null) {
-        vorpal.log(vorpal.chalk.red("Unable to load request"));
-        callback();
-        return;
-      }
-
-      const savedEnvironmentValues = currentEnvironment[args.variable];
-      const q = new Queue(function(currentValue, cb) {
-        const spinner = new Ora("--> " + args.request, "clock").start();
-        currentEnvironment[args.variable] = currentValue;
-        request.executeRequest(
-          conf.workingFolder,
-          currentEnvironment,
-          apiFile,
-          args.request,
-          conf.autoSave,
-          function(result, response) {
-            if (result.statusCode) {
-              if (result.statusCode < 300) {
-                spinner.color = "green";
-                spinner.succeed("--> " + chalk.green(response));
-              } else if (result.statusCode > 300) {
-                spinner.fail("--> " + chalk.red(response));
-              }
-            } else {
-              spinner.fail("--> " + chalk.red(result.error));
-            }
-            lastResponse = result;
-            const capturedValues = request.capture(apiFile, args.name, result);
-            for (const key in capturedValues) {
-              if (capturedValues.hasOwnProperty(key)) {
-                currentEnvironment[key] = capturedValues[key];
-              }
-            }
-            cb();
-          }
-        );
-      });
-
-      q.on("drain", function() {
-        currentEnvironment[args.variable] = savedEnvironmentValues;
-        callback();
-      });
-
-      savedEnvironmentValues.forEach(currentValue => {
-        q.push(currentValue);
-      });
     });
 
   vorpal.history("stampede-cli");
