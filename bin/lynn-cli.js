@@ -38,6 +38,7 @@ const commandConfig = require("../commands/config");
 const commandRequests = require("../commands/requests");
 const commandRequest = require("../commands/request");
 const commandForEach = require("../commands/forEach");
+const commandSave = require("../commands/save");
 
 clear();
 console.log(
@@ -216,6 +217,12 @@ if (conf.interactive) {
         vorpal,
         callback
       );
+    });
+
+  vorpal
+    .command("save", "Saves the most recent response")
+    .action(function(args, callback) {
+      commandSave.handle(currentState, vorpal, callback);
     });
 
   vorpal.history("stampede-cli");
