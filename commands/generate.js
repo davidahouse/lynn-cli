@@ -11,8 +11,10 @@ const request = require("../lib/request");
 async function handle(state, vorpal, callback) {
   const rootPath = files.rootPath(state.conf.workingFolder, "requests");
   const summaries = [];
-  for (const key in requests) {
-    const apiFile = request.parseApiFile(rootPath + "/" + requests[key].file);
+  for (const key in state.requests) {
+    const apiFile = request.parseApiFile(
+      rootPath + "/" + state.requests[key].file
+    );
     summaries.push(
       generate.generateDocs(state.conf.workingFolder, key, apiFile)
     );
