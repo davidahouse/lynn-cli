@@ -28,7 +28,7 @@ async function handle(name, state, vorpal, callback) {
       apiFile,
       name,
       state.autoSave,
-      function(result, response) {
+      function(result, response, executedRequest) {
         if (result.statusCode) {
           if (result.statusCode < 300) {
             spinner.color = "green";
@@ -40,6 +40,7 @@ async function handle(name, state, vorpal, callback) {
           spinner.fail("--> " + vorpal.chalk.red(result.error));
         }
         state.lastResponse = result;
+        state.lastRequest = executedRequest;
         const capturedValues = request.capture(apiFile, name, result);
         for (const key in capturedValues) {
           if (capturedValues.hasOwnProperty(key)) {
