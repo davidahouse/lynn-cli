@@ -46,6 +46,7 @@ async function handle(name, state, vorpal, callback) {
             state.currentEnvironment[key] = capturedValues[key];
           }
         }
+        vorpal.log(vorpal.chalk.yellow(JSON.stringify(result, null, 2)));
         callback();
       }
     );
