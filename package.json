@@ -18,7 +18,7 @@
     "expand-template": "^2.0.3",
     "figlet": "^1.2.1",
     "js-yaml": "^3.13.1",
-    "json-ptr": "^1.1.2",
+    "json-ptr": "^2.1.0",
     "jsonpath": "^1.0.1",
     "lynn-request": "^0.4.5",
     "mkdirp": "^0.5.1",
